@@ -42,9 +42,9 @@ export class BadgeUrgencia {
   styles: `
     ${ESTILO_BASE}
     span { font-weight: 500; }
-    i { width: 8px; height: 8px; border-radius: 50%; background: var(--cor-texto-suave); }
-    .s-em_andamento i { background: var(--cor-alerta); }
-    .s-concluido i { background: var(--cor-sucesso); }
+    i { width: 8px; height: 8px; border-radius: 50%; background: var(--serie-aberto); }
+    .s-em_andamento i { background: var(--serie-andamento); }
+    .s-concluido i { background: var(--serie-concluido); }
     .s-concluido { color: var(--cor-texto-suave); }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

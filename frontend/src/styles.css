@@ -15,8 +15,13 @@
   --cor-borda: color-mix(in srgb, var(--cor-superficie) 85%, var(--cor-fundo));
   --cor-texto-suave: color-mix(in srgb, var(--cor-texto) 65%, var(--cor-fundo));
   --cor-destaque-suave: color-mix(in srgb, var(--cor-destaque) 18%, var(--cor-fundo));
-  --cor-sucesso: #3fb27f;
-  --cor-alerta: #e0a43a;
+  --cor-sucesso: #199e70;
+  --cor-alerta: #c98500;
+
+  /* Séries de status (badges e gráficos); validadas para daltonismo sobre a superfície escura. */
+  --serie-aberto: #3987e5;
+  --serie-andamento: #c98500;
+  --serie-concluido: #199e70;
 
   --raio: 8px;
   --espaco: 16px;

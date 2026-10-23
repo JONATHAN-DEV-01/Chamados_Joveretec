@@ -1,0 +1,117 @@
+<header class="cabecalho-pagina">
+  <h1>Dashboard</h1>
+  <div class="campo filtro">
+    <label for="projeto">Projeto</label>
+    <select id="projeto" (change)="escolherProjeto($event)">
+      <option value="">Todos os projetos</option>
+      @for (projeto of projetos(); track projeto.id) {
+        <option [value]="projeto.id" [selected]="String(projeto.id) === projetoId()">
+          {{ projeto.nome }}{{ projeto.arquivado ? ' (arquivado)' : '' }}
+        </option>
+      }
+    </select>
+  </div>
+</header>
+
+@if (carregamento.erro(); as erro) {
+  <p class="alerta" role="alert">
+    {{ erro }}
+    <button type="button" class="btn btn-pequeno" (click)="carregamento.recarregar()">Tentar novamente</button>
+  </p>
+}
+
+@if (carregamento.dados(); as dados) {
+  <div class="grade" [class.carregando]="carregamento.carregando()" [attr.aria-busy]="carregamento.carregando()">
+    <section class="cartao meus" aria-labelledby="titulo-meus">
+      <div class="meus-topo">
+        <div>
+          <h2 id="titulo-meus">Meus chamados</h2>
+          <p class="numero-heroi">{{ dados.meus.total }}</p>
+          <a [routerLink]="['/chamados']" [queryParams]="linkMeus()">Ver meus chamados</a>
+        </div>
+        <ul class="blocos">
+          @for (status of STATUS; track status) {
+            <li>
+              <a class="bloco" [routerLink]="['/chamados']" [queryParams]="linkMeus(status)">
+                <span class="amostra" [style.background]="COR_STATUS[status]" aria-hidden="true"></span>
+                <span class="rotulo">{{ ROTULO_STATUS[status] }}</span>
+                <span class="numero">{{ meusPorStatus().get(status) ?? 0 }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      </div>
+    </section>
+
+    <section class="cartao" aria-labelledby="titulo-status">
+      <h2 id="titulo-status">Por status</h2>
+      <p class="dica">{{ totalGeral(dados) }} chamados no total</p>
+      <app-barras [barras]="barrasStatus()" />
+    </section>
+
+    <section class="cartao" aria-labelledby="titulo-urgencia">
+      <h2 id="titulo-urgencia">Por urgência</h2>
+      <p class="dica">Alta e Crítica em destaque</p>
+      <app-barras [barras]="barrasUrgencia()" />
+    </section>
+
+    <section class="cartao largo" aria-labelledby="titulo-devs">
+      <div class="titulo-com-legenda">
+        <h2 id="titulo-devs">Por desenvolvedor</h2>
+        <ul class="legenda" aria-label="Legenda">
+          @for (status of STATUS; track status) {
+            <li><span class="amostra" [style.background]="COR_STATUS[status]"></span>{{ ROTULO_STATUS[status] }}</li>
+          }
+        </ul>
+      </div>
+
+      @if (desenvolvedores().length) {
+        <div class="tabela-container">
+          <table class="tabela">
+            <thead>
+              <tr>
+                <th scope="col">Desenvolvedor</th>
+                <th scope="col" class="coluna-barra"><span class="sr-only">Distribuição</span></th>
+                <th scope="col" class="num">Abertos</th>
+                <th scope="col" class="num">Em andamento</th>
+                <th scope="col" class="num">Concluídos</th>
+                <th scope="col" class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (dev of desenvolvedores(); track dev.usuario.id) {
+                <tr>
+                  <td>
+                    <a [routerLink]="['/chamados']" [queryParams]="linkDesenvolvedor(dev.usuario.id)">{{ dev.usuario.nome }}</a>
+                  </td>
+                  <td class="coluna-barra">
+                    <span class="empilhada" [style.width.%]="dev.largura" aria-hidden="true">
+                      @for (segmento of dev.segmentos; track segmento.status) {
+                        @if (segmento.valor > 0) {
+                          <span
+                            class="segmento"
+                            [style.flex-grow]="segmento.valor"
+                            [style.background]="COR_STATUS[segmento.status]"
+                            [title]="ROTULO_STATUS[segmento.status] + ': ' + segmento.valor"
+                          ></span>
+                        }
+                      }
+                    </span>
+                  </td>
+                  <td class="num">{{ dev.abertos }}</td>
+                  <td class="num">{{ dev.emAndamento }}</td>
+                  <td class="num">{{ dev.concluidos }}</td>
+                  <td class="num total">{{ dev.total }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="vazio">Nenhum chamado atribuído ainda.</p>
+      }
+    </section>
+  </div>
+} @else if (carregamento.carregando()) {
+  <p class="vazio">Carregando indicadores…</p>
+}
