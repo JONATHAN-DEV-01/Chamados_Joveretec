@@ -37,12 +37,18 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
         return (int) count("projeto.id", projetoId) + 1;
     }
 
-    /** Soma {@code delta} à posição dos chamados do projeto no intervalo informado, exceto o chamado movido. */
-    public void deslocarPosicoes(Long projetoId, int de, int ate, int delta, Long excetoChamadoId) {
-        update("posicao = posicao + :delta where projeto.id = :projetoId and posicao between :de and :ate"
-                        + " and id <> :excetoId",
-                Parameters.with("delta", delta).and("projetoId", projetoId)
-                        .and("de", de).and("ate", ate).and("excetoId", excetoChamadoId));
+    /** Soma {@code delta} à posição dos chamados do projeto cujas posições estão no intervalo [de, ate]. */
+    public void deslocarPosicoes(Long projetoId, int de, int ate, int delta) {
+        if (de > ate) {
+            return;
+        }
+        update("posicao = posicao + :delta where projeto.id = :projetoId and posicao between :de and :ate",
+                Parameters.with("delta", delta).and("projetoId", projetoId).and("de", de).and("ate", ate));
+    }
+
+    /** Relê o chamado do banco (usado após bloquear o projeto, para obter a posição atual). */
+    public void recarregar(Chamado chamado) {
+        getEntityManager().refresh(chamado);
     }
 
     public List<ContagemPorStatus> contarPorStatus(FiltroChamados filtro) {

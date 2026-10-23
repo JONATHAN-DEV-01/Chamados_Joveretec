@@ -2,6 +2,7 @@ package br.com.joveretec.chamados.usuario.boundary;
 
 import br.com.joveretec.chamados.comum.paginacao.Pagina;
 import br.com.joveretec.chamados.comum.paginacao.Paginacao;
+import br.com.joveretec.chamados.comum.paginacao.ParametrosEnum;
 import br.com.joveretec.chamados.comum.seguranca.UsuarioLogado;
 import br.com.joveretec.chamados.usuario.boundary.UsuarioDTOs.AtualizarUsuarioRequest;
 import br.com.joveretec.chamados.usuario.boundary.UsuarioDTOs.CriarUsuarioRequest;
@@ -40,9 +41,10 @@ public class UsuarioResource {
     @GET
     public Pagina<UsuarioDTO> listar(@QueryParam("busca") String busca,
                                      @QueryParam("ativo") Boolean ativo,
-                                     @QueryParam("perfil") Perfil perfil,
+                                     @QueryParam("perfil") String perfil,
                                      @Valid @BeanParam Paginacao paginacao) {
-        return usuarios.listar(new FiltroUsuarios(busca, ativo, perfil), paginacao).map(UsuarioDTO::de);
+        FiltroUsuarios filtro = new FiltroUsuarios(busca, ativo, ParametrosEnum.valor(perfil, Perfil.class, "perfil"));
+        return usuarios.listar(filtro, paginacao).map(UsuarioDTO::de);
     }
 
     @GET

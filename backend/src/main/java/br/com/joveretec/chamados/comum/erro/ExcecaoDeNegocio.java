@@ -10,6 +10,10 @@ public class ExcecaoDeNegocio extends RuntimeException {
         this.codigo = codigo;
     }
 
+    public static ExcecaoDeNegocio validacao(String mensagem) {
+        return new ExcecaoDeNegocio(CodigoErro.VALIDACAO, mensagem);
+    }
+
     public static ExcecaoDeNegocio naoEncontrado(String mensagem) {
         return new ExcecaoDeNegocio(CodigoErro.NAO_ENCONTRADO, mensagem);
     }
