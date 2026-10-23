@@ -24,13 +24,15 @@ public class AcompanhamentoService {
 
     private final AcompanhamentoRepository acompanhamentos;
     private final AnexoRepository anexos;
+    private final AnexoService servicoDeAnexos;
     private final ChamadoService chamados;
     private final UsuarioService usuarios;
 
     public AcompanhamentoService(AcompanhamentoRepository acompanhamentos, AnexoRepository anexos,
-                                 ChamadoService chamados, UsuarioService usuarios) {
+                                 AnexoService servicoDeAnexos, ChamadoService chamados, UsuarioService usuarios) {
         this.acompanhamentos = acompanhamentos;
         this.anexos = anexos;
+        this.servicoDeAnexos = servicoDeAnexos;
         this.chamados = chamados;
         this.usuarios = usuarios;
     }
@@ -85,6 +87,7 @@ public class AcompanhamentoService {
     @Transactional
     public void excluir(Long chamadoId, Long id, Long usuarioId) {
         Acompanhamento acompanhamento = buscarParaAlterar(chamadoId, id, usuarioId);
+        servicoDeAnexos.excluirTodos(anexos.doAcompanhamento(id));
         acompanhamentos.delete(acompanhamento);
         chamados.registrarAtividade(chamadoId);
         LOG.infof("Acompanhamento id=%d excluído pelo usuário id=%d.", id, usuarioId);
