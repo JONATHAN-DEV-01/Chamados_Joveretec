@@ -1,6 +1,6 @@
 # Chamados Joveretec
 
-Ferramenta web de gestão de chamados para equipes de desenvolvimento: filas priorizáveis por projeto, atribuição (inclusive "atribuir a mim"), histórico de alterações, dashboard e paleta de cores configurável pelo administrador.
+Ferramenta web de gestão de chamados para equipes de desenvolvimento: filas priorizáveis por projeto, atribuição (inclusive "atribuir a mim"), feed de acompanhamentos com eventos automáticos, anexos (enviados direto do navegador ao Supabase Storage, com progresso e retomada), dashboard e paleta de cores configurável pelo administrador.
 
 | Pasta | Conteúdo |
 |---|---|
@@ -26,6 +26,7 @@ cd backend
 - API em `http://localhost:8080/api`, health check em `http://localhost:8080/q/health`
 - Admin de desenvolvimento: `admin@joveretec.local` / `admin12345` (troque com `ADMIN_EMAIL` / `ADMIN_SENHA`)
 - O banco de dev é um container temporário: os dados somem ao parar o backend
+- **Anexos em dev** usam o armazenamento **local** (`ARMAZENAMENTO_TIPO=local`, o padrão fora de produção): os arquivos vão para `<tmp>/chamados-anexos` e passam pelo backend, sem precisar de Supabase. Para testar contra um Supabase real, defina `ARMAZENAMENTO_TIPO=supabase`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_ANON_KEY` (veja [PENDENCIAS.md](PENDENCIAS.md#9-supabase-storage-após-o-deploy))
 
 ### 2. Frontend (porta 4200)
 Em outro terminal:
@@ -40,14 +41,14 @@ Abra `http://localhost:4200` e entre com o admin de desenvolvimento. O frontend 
 1. Entre como admin. Em **Administração → Projetos**, crie um projeto. Em **Usuários**, crie um desenvolvedor.
 2. Em **Novo chamado**, escolha projeto, urgência, responsável (outro dev ou "eu mesmo") e posição na fila.
 3. Na **lista de chamados**, combine filtros e busca. A ordem é urgência e depois a posição na fila.
-4. Abra um chamado: edite, mude o status, use **Atribuir a mim** e veja o histórico.
+4. Abra um chamado: edite, mude o status e use **Atribuir a mim**. No **feed**, publique um acompanhamento (Markdown, tempo gasto, anexos por clique ou arraste, Ctrl+Enter) ou uma **Solução** que conclui o chamado; os eventos automáticos aparecem intercalados.
 5. Em **Fila do projeto**, reordene arrastando ou com as setas.
 6. Confira o **Dashboard** e troque a paleta em **Configurações**: a pré-visualização é imediata e, ao salvar, vale para todos.
 
 ## Testes
 ```bash
-cd backend  && ./mvnw test           # 61 testes de API contra PostgreSQL real (requer Docker)
-cd frontend && npm run test:ci       # 54 testes unitários (Vitest)
+cd backend  && ./mvnw test           # 106 testes (API contra PostgreSQL real; requer Docker)
+cd frontend && npm run test:ci       # 92 testes unitários (Vitest)
 ```
 O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os dois em todo push e pull request, além do build da imagem Docker e do build de produção do frontend.
 
@@ -77,15 +78,18 @@ Resumo; a lista completa com request/response está em [docs/PLANO.md](docs/PLAN
 | Usuários | `GET/POST /api/usuarios`, `GET/PUT /api/usuarios/{id}`, `POST /api/usuarios/{id}/desativar` · `/reativar` |
 | Projetos | `GET/POST /api/projetos`, `GET/PUT /api/projetos/{id}`, `POST /api/projetos/{id}/arquivar` · `/desarquivar` |
 | Chamados | `GET/POST /api/chamados`, `GET/PUT /api/chamados/{id}`, `PATCH .../status`, `POST .../atribuir-a-mim`, `PUT .../posicao`, `GET .../historico` |
-| Dashboard | `GET /api/dashboard/por-status` · `/por-urgencia` · `/por-desenvolvedor` · `/meus-chamados` |
+| Feed | `GET /api/chamados/{id}/feed`, `POST/PUT/DELETE /api/chamados/{id}/acompanhamentos[/{acompId}]`, `POST .../acompanhamentos/rascunhos` |
+| Anexos | `POST /api/chamados/{id}/anexos` (autoriza o envio), `POST /api/anexos/{id}/confirmar`, `GET /api/anexos/{id}/download`, `DELETE /api/anexos/{id}` |
+| Dashboard | `GET /api/dashboard/por-status` · `/por-urgencia` · `/por-desenvolvedor` · `/meus-chamados` · `/ultimas-atualizacoes` |
 | Configurações | `GET /api/configuracoes` (público), `PUT /api/configuracoes` (admin) |
 
 ## Estrutura do frontend
 ```
 src/app/
-├── core/          services HTTP tipados, modelos (DTOs), auth (sessão, interceptor, guards), tema, avisos
+├── core/          services HTTP tipados, modelos (DTOs), auth (sessão, interceptor, guards), tema, avisos,
+│                  envio/ (upload TUS/PUT com progresso, fila de envios, aviso ao sair)
 ├── shared/        componentes (badges, paginação, confirmação), formulários, rótulos, carregamento reativo
 ├── layout/        shell: barra lateral + cabeçalho
-└── features/      login, chamados (lista, novo, detalhe, fila), dashboard, admin, conta
+└── features/      login, chamados (lista, novo, detalhe com feed, fila), dashboard, admin, conta
 ```
 Todas as rotas são lazy-loaded, todos os componentes usam `OnPush` e as chamadas HTTP ficam só nos services.

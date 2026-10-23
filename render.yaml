@@ -34,3 +34,14 @@ services:
         sync: false
       - key: ADMIN_SENHA
         sync: false
+      # Anexos no Supabase Storage (ver PENDENCIAS.md, seção 9)
+      - key: ARMAZENAMENTO_TIPO
+        value: supabase
+      - key: STORAGE_BUCKET
+        value: chamados-anexos
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false

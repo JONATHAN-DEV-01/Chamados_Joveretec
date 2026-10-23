@@ -1,8 +1,9 @@
 # Plano — Sistema de Chamados Joveretec
 
-> Status: **Partes 1 e 2 concluídas**. Backend (61 testes) e frontend Angular 22 (54 testes) implementados,
-> CI no GitHub Actions e deploy preparado (Render, Vercel, Supabase). Para rodar, veja o [README](../README.md);
-> os passos manuais estão em [PENDENCIAS.md](../PENDENCIAS.md). As seções abaixo descrevem o backend.
+> Status: **Partes 1, 2 e 3 concluídas**. Backend (106 testes) e frontend Angular 22 (92 testes) implementados,
+> incluindo o feed de acompanhamentos e os anexos no Supabase Storage (Parte 3). CI no GitHub Actions e deploy
+> preparado (Render, Vercel, Supabase). Para rodar, veja o [README](../README.md); os passos manuais estão em
+> [PENDENCIAS.md](../PENDENCIAS.md). As seções abaixo descrevem o backend.
 
 ## 1. Visão geral
 
@@ -37,13 +38,14 @@ br.com.joveretec.chamados
 ├── auth/          boundary · control
 ├── usuario/       boundary · control · entity
 ├── projeto/       boundary · control · entity
-├── chamado/       boundary · control · entity   (inclui histórico)
+├── chamado/       boundary · control · entity   (histórico, feed, acompanhamentos e anexos)
 ├── dashboard/     boundary · control             (consultas agregadas)
 ├── configuracao/  boundary · control · entity
 └── comum/
     ├── erro/       CodigoErro, ExcecaoDeNegocio, RespostaErro e os ExceptionMappers
     ├── paginacao/  Pagina, Paginacao (@BeanParam), CondicoesConsulta (filtros dinâmicos), ParametrosEnum
-    └── seguranca/  UsuarioLogado (dados do JWT), HashDeSenha (interface) + BcryptHashDeSenha
+    ├── seguranca/  UsuarioLogado (dados do JWT), HashDeSenha (interface) + BcryptHashDeSenha
+    └── armazenamento/ ArmazenamentoArquivos (interface) + SupabaseArmazenamento e LocalArmazenamento
 ```
 
 Regras de dependência:
@@ -91,6 +93,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | criado_por_id | bigint FK → usuario | not null |
 | versao | bigint | lock otimista (evita sobrescrever edição concorrente → 409) |
 | criado_em / atualizado_em | timestamptz | |
+| ultima_atividade_em | timestamptz | edições + acompanhamentos + anexos; atualizada por *bulk update*, que não incrementa `versao` (assim um acompanhamento novo não gera 409 em quem está editando), V3 |
 
 Índices:
 - `(projeto_id, posicao)` — fila do projeto e reordenação
@@ -106,10 +109,41 @@ Uma linha por campo alterado.
 | id | bigint PK | |
 | chamado_id | bigint FK → chamado | not null, indexado com `alterado_em` |
 | usuario_id | bigint FK → usuario | quem alterou |
-| campo | varchar(30) | `CRIACAO`, `TITULO`, `DESCRICAO`, `URGENCIA`, `STATUS`, `RESPONSAVEL`, `POSICAO` |
+| campo | varchar(30) | `CRIACAO`, `TITULO`, `DESCRICAO`, `URGENCIA`, `STATUS`, `RESPONSAVEL`, `POSICAO`, `ANEXO_ADICIONADO`, `ANEXO_REMOVIDO` |
 | valor_anterior | text | opcional |
 | valor_novo | text | opcional |
 | alterado_em | timestamptz | not null |
+
+### `acompanhamento` (V3)
+| Coluna | Tipo | Regras |
+|---|---|---|
+| id | bigint PK | |
+| chamado_id | bigint FK → chamado | not null, cascade; índice `(chamado_id, criado_em)` |
+| autor_id | bigint FK → usuario | not null, indexado |
+| situacao | varchar(10) | `RASCUNHO` (recebendo anexos, fora do feed) \| `PUBLICADO` |
+| tipo | varchar(15) | `ACOMPANHAMENTO` (padrão) \| `SOLUCAO` |
+| texto | text | obrigatório quando `PUBLICADO` (Markdown simples) |
+| tempo_gasto_minutos | integer | opcional, ≥ 0 |
+| criado_em | timestamptz | data no feed (para rascunhos, a da publicação) |
+| editado_em | timestamptz | preenchida em edições ("editado") |
+
+Índice parcial `(criado_em DESC) WHERE situacao = 'PUBLICADO'`, usado nas "últimas atualizações".
+
+### `anexo` (V3)
+| Coluna | Tipo | Regras |
+|---|---|---|
+| id | bigint PK | |
+| chamado_id | bigint FK → chamado | not null, cascade, indexado |
+| acompanhamento_id | bigint FK → acompanhamento | opcional (vazio = anexo da abertura), cascade, indexado |
+| nome_original | varchar(255) | nome como o usuário enviou |
+| caminho | varchar(1024) | objeto no bucket (ver abaixo) |
+| tipo_mime | varchar(255) | `application/octet-stream` se o navegador não informar |
+| tamanho_bytes | bigint | atualizado com o tamanho real no Storage ao confirmar |
+| status | varchar(10) | `PENDENTE` \| `CONCLUIDO`; índice parcial para pendentes |
+| enviado_por_id | bigint FK → usuario | |
+| criado_em / concluido_em | timestamptz | |
+
+**Caminho no bucket `chamados-anexos`:** `projetos/{projetoId}/chamados/{chamadoId}/{origem}/{anexoId}-{nomeSanitizado}`, com `origem` = `abertura` ou `acompanhamentos/{acompanhamentoId}`. O nome é sanitizado: sem diretórios, acentos, espaços ou caracteres especiais, com extensão em minúsculas e até 120 caracteres. Ex.: `Relatório Final (v2).PDF` → `42-Relatorio-Final-v2.pdf`.
 
 ### `configuracao`
 Chave/valor simples, exposto como objeto estruturado pela API.
@@ -142,6 +176,10 @@ Seed (migration Flyway):
 - **Permissão de edição:** qualquer usuário autenticado (dev ou admin) pode editar qualquer chamado — ferramenta de equipe.
 - **Projeto do chamado:** não pode ser trocado após a criação.
 - **Histórico:** gravado pelo `control` na mesma transação da alteração.
+- **Feed:** a abertura (descrição do chamado) vem sempre primeiro; acompanhamentos publicados e eventos do histórico aparecem intercalados por data. O evento `CRIACAO` fica de fora, porque a abertura já o representa.
+- **Acompanhamentos:** qualquer dev ou admin publica em qualquer chamado; só o **autor ou um admin** edita e exclui. Excluir apaga também os anexos (banco e Storage). Uma Solução com `concluirChamado` muda o status para CONCLUIDO na mesma transação (gera o evento de status). Projeto arquivado bloqueia publicar, editar, excluir, rascunhos e anexos (422).
+- **Anexos:** a aplicação não impõe limite de tamanho (vale o do Storage). Na abertura, só o autor do chamado ou admin anexa; em acompanhamento, só no rascunho do próprio usuário, antes de publicar. Exclui quem enviou ou um admin. Eventos no feed: anexo adicionado à abertura e anexo removido. Os anexos publicados com um acompanhamento aparecem no próprio card, sem evento extra.
+- **Rascunho:** o primeiro arquivo escolhido no compositor cria um rascunho, porque o caminho precisa do id. A publicação exige todos os anexos `CONCLUIDO` (422 caso contrário). Rascunhos e anexos `PENDENTE` com mais de 24h são removidos pela rotina agendada (`LimpezaDeAnexos`, a cada 1h), inclusive no Storage.
 - **Admin inicial:** criado na inicialização da aplicação (seed em Java, não em SQL) se não existir nenhum admin, lendo `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`. Motivo: o hash BCrypt é gerado em Java e a senha nunca fica em script versionado nem afeta o checksum do Flyway.
 
 ## 3. Endpoints
@@ -206,8 +244,8 @@ JWT: claims `sub` (id), `upn` (email), `groups` ([perfil]), `name`; expiração 
 ### Chamados
 ```
 ChamadoResumoDTO = { id, titulo, urgencia, status, posicao,
-                     projeto: { id, nome }, responsavel: { id, nome } | null, atualizadoEm }
-ChamadoDTO       = ChamadoResumoDTO + { descricao, criadoPor: { id, nome }, criadoEm, versao }
+                     projeto: { id, nome }, responsavel: { id, nome } | null, atualizadoEm, ultimaAtividadeEm }
+ChamadoDTO       = ChamadoResumoDTO + { descricao, criadoPor: { id, nome }, criadoEm, tempoGastoTotalMinutos, versao }
 HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome }, alteradoEm }
 ```
 
@@ -226,6 +264,36 @@ A listagem usa consulta com `JOIN FETCH` de projeto e responsável para evitar N
 
 Erros específicos: criação/edição com projeto arquivado ou responsável inativo → 422; usuário desativado com token ainda válido tentando alterar → 403.
 
+### Feed, acompanhamentos e anexos (Parte 3)
+```
+AnexoDTO          = { id, nome, tipoMime, tamanhoBytes, status, enviadoPor: { id, nome }, criadoEm, podeExcluir }
+AcompanhamentoDTO = { id, tipo, texto, tempoGastoMinutos, autor: { id, nome }, criadoEm, editadoEm, podeAlterar, anexos: [AnexoDTO] }
+ItemFeedDTO       = { tipo: ABERTURA | ACOMPANHAMENTO | EVENTO, data,
+                      abertura?: { descricao, autor, criadoEm, anexos }, acompanhamento?: AcompanhamentoDTO, evento?: HistoricoDTO }
+EnvioDTO          = { protocolo: TUS | PUT, url, cabecalhos, metadados, tamanhoParte }
+```
+`podeAlterar` e `podeExcluir` já vêm calculados para quem está lendo (autor ou admin, e projeto ativo).
+
+| Método | Rota | Perfil | Request | Response |
+|---|---|---|---|---|
+| GET | `/api/chamados/{id}/feed?ordem&pagina&tamanho` | Autenticado | `ordem` = `ASC` (padrão) ou `DESC` | `200 Página<ItemFeedDTO>` |
+| POST | `/api/chamados/{id}/acompanhamentos` | Autenticado | `{ texto, tipo?, tempoGastoMinutos?, concluirChamado?, rascunhoId? }` | `201 AcompanhamentoDTO` · 422 (concluir sem ser Solução, envios pendentes, projeto arquivado) |
+| POST | `/api/chamados/{id}/acompanhamentos/rascunhos` | Autenticado | — | `201 { id }` |
+| PUT | `/api/chamados/{id}/acompanhamentos/{acompId}` | Autor ou admin | `{ texto, tipo?, tempoGastoMinutos? }` | `200 AcompanhamentoDTO` (com `editadoEm`) · 403 |
+| DELETE | `/api/chamados/{id}/acompanhamentos/{acompId}` | Autor ou admin | — | `204` (apaga os anexos no banco e no Storage) · 403 |
+| POST | `/api/chamados/{id}/anexos` | Autenticado (abertura: autor do chamado ou admin) | `{ nome, tipoMime?, tamanhoBytes, acompanhamentoId? }` | `201 { anexo: AnexoDTO (PENDENTE), envio: EnvioDTO }` |
+| POST | `/api/anexos/{id}/confirmar` | Quem enviou | — | `200 AnexoDTO (CONCLUIDO)` · 422 se o objeto ainda não está no Storage |
+| GET | `/api/anexos/{id}/download?inline` | Autenticado | `inline=true` para pré-visualizar imagens | `200 { url, expiraEm }` (URL assinada, 5 min) |
+| DELETE | `/api/anexos/{id}` | Quem enviou ou admin | — | `204` · 403 |
+| PUT/GET | `/api/armazenamento-local/{token}` | Token assinado | só com `ARMAZENAMENTO_TIPO=local` (dev/test); senão 404 | envio / download local |
+
+**Fluxo de upload (em produção o backend não recebe o binário):**
+1. O frontend chama `POST /api/chamados/{id}/anexos`. O backend valida a permissão, registra o anexo `PENDENTE` num caminho definido por ele e devolve a autorização. No Supabase é `protocolo=TUS`, com endpoint `…/storage/v1/upload/resumable/sign` e headers `x-signature` (token de `createSignedUploadUrl`) e `apikey` (chave pública).
+2. O navegador envia o arquivo direto ao Supabase com tus-js-client, em partes de 6 MB, com progresso, cancelamento e retomada.
+3. O frontend chama `POST /api/anexos/{id}/confirmar`. O backend faz um `HEAD` no objeto, grava o tamanho real e marca o anexo como `CONCLUIDO`.
+
+O feed é montado sem N+1: uma consulta `UNION ALL` ordena e pagina só as referências (tipo, id, data), e depois no máximo 4 consultas em lote trazem os detalhes da página.
+
 ### Dashboard
 Todos aceitam `projetoId` opcional. Agregações feitas no banco (`GROUP BY`).
 
@@ -235,6 +303,7 @@ Todos aceitam `projetoId` opcional. Agregações feitas no banco (`GROUP BY`).
 | GET | `/api/dashboard/por-urgencia` | Autenticado | `200 [ { urgencia, total } ]` |
 | GET | `/api/dashboard/por-desenvolvedor` | Autenticado | `200 [ { usuario: { id, nome }, abertos, emAndamento, concluidos, total } ]` (só quem tem chamados atribuídos; ordenado por nome) |
 | GET | `/api/dashboard/meus-chamados` | Autenticado | `200 { total, porStatus: [...], porUrgencia: [...] }` do usuário logado |
+| GET | `/api/dashboard/ultimas-atualizacoes?limite` | Autenticado | `200 [ { acompanhamentoId, chamado: { id, titulo }, autor, tipo, resumo, criadoEm } ]`: acompanhamentos recentes nos chamados em que o usuário é responsável ou autor (limite de 1 a 50, padrão 10; resumo sem Markdown) |
 
 ### Configurações
 ```
@@ -261,6 +330,7 @@ ConfiguracaoDTO = { paleta: { fundo, superficie, destaque, texto },
 - **Cache:** `@CacheResult` em `LeitorDeConfiguracoes.carregar()` (bean separado, para o fallback nunca ser cacheado); a alteração invalida o cache **depois** do commit.
 - **Autenticação sob demanda** (`quarkus.http.auth.proactive=false`): permite que token inválido/ausente responda 401 no formato padrão.
 - **Logs:** JSON (`quarkus-logging-json`) no perfil `prod`, texto legível em dev; nunca logar senha, hash ou token.
+- **Storage:** `@Timeout` + `@Retry` + `@CircuitBreaker` em todas as chamadas ao Supabase Storage. O retry vale só para falhas transitórias (rede, 5xx); recusas 4xx não são repetidas. Falhas viram 503 `INDISPONIVEL` com mensagem clara. A implementação ativa (`ARMAZENAMENTO_TIPO=local|supabase`) é escolhida em tempo de execução; com `supabase` sem URL ou chave, a aplicação não sobe.
 - **Docker:** build multi-stage (Maven + JDK 21 → JRE 21), escuta em `${PORT}` (Render).
 
 ### Variáveis de ambiente (`.env.example`)
@@ -274,8 +344,13 @@ ConfiguracaoDTO = { paleta: { fundo, superficie, destaque, texto },
 | `CORS_ORIGINS` | origens permitidas, separadas por vírgula |
 | `ADMIN_NOME` / `ADMIN_EMAIL` / `ADMIN_SENHA` | admin inicial |
 | `PORT` | porta HTTP (Render define automaticamente) |
+| `ARMAZENAMENTO_TIPO` | `local` (padrão em dev/test) ou `supabase` (padrão em prod) |
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | chave secreta (service_role ou `sb_secret_…`), **só no backend** |
+| `SUPABASE_ANON_KEY` | chave pública (anon ou `sb_publishable_…`), repassada ao navegador para o upload TUS |
+| `STORAGE_BUCKET` | bucket privado dos anexos (padrão `chamados-anexos`) |
 
-## 5. Testes (backend) — 61 testes, todos passando
+## 5. Testes (backend) — 106 testes, todos passando
 PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada teste cria os próprios dados (nomes únicos), então não há dependência de ordem. Helper comum: `src/test/java/.../ApiTeste.java`.
 
 | Classe | Cobertura |
@@ -287,6 +362,11 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 | `DashboardResourceTest` (4) | por status (com zeros), por urgência, por desenvolvedor, meus chamados |
 | `ConfiguracaoResourceTest` (4) | leitura pública, alteração pelo admin refletida na leitura (cache invalidado), cor inválida, sem token |
 | `UsuarioProjetoResourceTest` (9) | e-mail duplicado, alteração de perfil, admin não se desativa, filtros, arquivar/desarquivar, nome duplicado, `/q/health/ready`, rota inexistente 404 |
+| `AcompanhamentoResourceTest` (15) | publicar, validação, editar ("editado"), outro dev recebe 403, admin edita e exclui, autor exclui, chamado errado 404, Solução concluindo o chamado, só Solução conclui, tempo total, última atividade sem mudar a versão, projeto arquivado bloqueia tudo, últimas atualizações (e resumo sem Markdown) |
+| `FeedResourceTest` (8) | abertura primeiro, intercalação cronológica com eventos (sem `CRIACAO`), ordem DESC, paginação, rascunho fora do feed, permissões por leitor, ordem inválida, 404 |
+| `AnexoFluxoTest` (10) | fluxo completo solicitar → enviar → confirmar → baixar → excluir (com eventos e caminho sanitizado), confirmar sem enviar 422, pendente não baixa, permissões para excluir e para anexar na abertura, link adulterado 403, publicação só depois dos envios, rascunho de outra pessoa, exclusão em cascata (banco + Storage), limpeza de pendentes e rascunhos antigos |
+| `CaminhoDoAnexoTest` (5) | pasta e caminho; sanitização (acentos, espaços, `../`, extensão, tamanho) |
+| `SupabaseArmazenamentoTest` (7) | contrato com a API REST do Storage contra um servidor HTTP falso: upload assinado (TUS), HEAD, link de download, exclusão em lote, 5xx x 4xx, chaves `sb_secret_`, configuração obrigatória |
 
 Além dos testes, a imagem Docker foi validada no perfil `prod` (PostgreSQL 17 em container, chaves RSA via variáveis de ambiente): health `UP`, login, rota protegida, preflight CORS e logs JSON sem senha, token ou e-mail.
 
