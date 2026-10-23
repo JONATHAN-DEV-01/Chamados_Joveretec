@@ -1,16 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Observable, map, shareReplay, tap } from 'rxjs';
 import { FeedService } from '../../../../core/api/feed.service';
+import { DestinoDoEnvio } from '../../../../core/envio/envio-de-arquivo';
+import { filaDeEnvios } from '../../../../core/envio/fila-de-envios';
 import { Acompanhamento, TipoAcompanhamento } from '../../../../core/models/feed';
 import { NotificacaoService } from '../../../../core/notificacao/notificacao.service';
+import { AreaDeAnexos } from '../../../../shared/componentes/area-de-anexos';
 import { ErroCampo } from '../../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../../shared/formularios/erros-servidor';
 
 /** Caixa de novo acompanhamento, fixa no fim do feed. Ctrl+Enter publica. */
 @Component({
   selector: 'app-novo-acompanhamento',
-  imports: [ReactiveFormsModule, ErroCampo],
+  imports: [ReactiveFormsModule, ErroCampo, AreaDeAnexos],
   templateUrl: './novo-acompanhamento.html',
   styleUrl: './feed.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,6 +29,15 @@ export class NovoAcompanhamento {
   private readonly notificacao = inject(NotificacaoService);
   protected readonly publicando = signal(false);
 
+  /**
+   * Os anexos precisam do id do acompanhamento no caminho do Storage, então o primeiro arquivo
+   * cria um rascunho; ele só aparece no feed quando for publicado.
+   */
+  private rascunho$: Observable<{ id: number }> | null = null;
+  private readonly rascunhoId = signal<number | null>(null);
+  protected readonly fila = filaDeEnvios(() => this.destino());
+  protected readonly aguardandoEnvios = computed(() => this.fila.pendente() || this.fila.comErro());
+
   protected readonly formulario = inject(NonNullableFormBuilder).group({
     texto: ['', [Validators.required, Validators.maxLength(50000)]],
     tipo: ['ACOMPANHAMENTO' as TipoAcompanhamento],
@@ -38,7 +51,7 @@ export class NovoAcompanhamento {
   protected readonly ofereceConcluir = computed(() => this.tipo() === 'SOLUCAO' && !this.chamadoConcluido());
 
   protected publicar(): void {
-    if (this.publicando()) {
+    if (this.publicando() || this.aguardandoEnvios()) {
       return;
     }
     if (this.formulario.invalid) {
@@ -53,12 +66,15 @@ export class NovoAcompanhamento {
         tipo: valor.tipo,
         tempoGastoMinutos: valor.tempoGastoMinutos || null,
         concluirChamado: this.ofereceConcluir() && valor.concluirChamado,
-        rascunhoId: null,
+        rascunhoId: this.rascunhoId(),
       })
       .subscribe({
         next: (acompanhamento) => {
           this.publicando.set(false);
           this.formulario.reset();
+          this.fila.limpar();
+          this.rascunho$ = null;
+          this.rascunhoId.set(null);
           this.publicado.emit(acompanhamento);
         },
         error: (erro: unknown) => {
@@ -68,6 +84,15 @@ export class NovoAcompanhamento {
           }
         },
       });
+  }
+
+  private destino(): Observable<DestinoDoEnvio> {
+    const chamadoId = this.chamadoId();
+    this.rascunho$ ??= this.feed.criarRascunho(chamadoId).pipe(
+      tap(({ id }) => this.rascunhoId.set(id)),
+      shareReplay(1),
+    );
+    return this.rascunho$.pipe(map(({ id }) => ({ chamadoId, acompanhamentoId: id })));
   }
 
   protected atalho(evento: KeyboardEvent): void {

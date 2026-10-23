@@ -12,6 +12,8 @@
     <app-erro-campo [controle]="formulario.controls.texto" />
   </div>
 
+  <app-area-de-anexos [fila]="fila" idCampo="anexos-acompanhamento" [desabilitada]="publicando()" />
+
   <div class="opcoes-compositor">
     <div class="segmentado" role="radiogroup" aria-label="Tipo">
       <label class="chip" [attr.aria-pressed]="formulario.controls.tipo.value === 'ACOMPANHAMENTO'">
@@ -35,8 +37,14 @@
     }
 
     <span class="espaco"></span>
-    <span class="dica atalho">Ctrl+Enter para publicar</span>
-    <button type="submit" class="btn btn-primario" [disabled]="publicando()">
+    @if (fila.comErro()) {
+      <span class="dica">Remova ou retome os arquivos com falha para publicar.</span>
+    } @else if (fila.pendente()) {
+      <span class="dica">Aguardando o envio dos arquivos…</span>
+    } @else {
+      <span class="dica atalho">Ctrl+Enter para publicar</span>
+    }
+    <button type="submit" class="btn btn-primario" [disabled]="publicando() || aguardandoEnvios()">
       {{ publicando() ? 'Publicando…' : 'Publicar' }}
     </button>
   </div>

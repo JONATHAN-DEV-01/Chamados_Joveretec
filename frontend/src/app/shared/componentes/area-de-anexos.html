@@ -1,0 +1,66 @@
+<div
+  class="zona"
+  [class.arrastando]="arrastando()"
+  [class.desabilitada]="desabilitada()"
+  (dragover)="sobre($event)"
+  (dragleave)="arrastando.set(false)"
+  (drop)="soltar($event)"
+>
+  <span aria-hidden="true">📎</span>
+  <span>Arraste arquivos para cá ou</span>
+  <label class="btn btn-pequeno" [for]="idCampo()">escolha no computador</label>
+  <input
+    [id]="idCampo()"
+    type="file"
+    multiple
+    class="sr-only"
+    [disabled]="desabilitada()"
+    (change)="selecionar($event)"
+  />
+</div>
+
+@if (!fila().vazia()) {
+  <ul class="envios" aria-live="polite">
+    @for (envio of fila().envios(); track envio) {
+      <li class="envio" [class.erro]="envio.estado() === 'erro'">
+        <div class="linha">
+          <span aria-hidden="true">{{ icone(envio) }}</span>
+          <span class="nome" [title]="envio.arquivo.name">{{ envio.arquivo.name }}</span>
+          <span class="texto-suave">{{ envio.arquivo.size | tamanho }}</span>
+          <span class="estado">{{ ROTULO_ESTADO[envio.estado()] }}@if (envio.estado() === 'enviando') { {{ percentual(envio) }}%}</span>
+          <span class="botoes">
+            @if (envio.estado() === 'enviando') {
+              <button type="button" class="btn btn-pequeno" (click)="envio.cancelar()">Cancelar</button>
+            }
+            @if (envio.estado() === 'pausado' || envio.estado() === 'erro') {
+              <button type="button" class="btn btn-pequeno" (click)="envio.retomar()">Retomar</button>
+            }
+            <button
+              type="button"
+              class="btn btn-fantasma btn-pequeno"
+              (click)="fila().remover(envio)"
+              [attr.aria-label]="'Remover ' + envio.arquivo.name"
+            >
+              ✕
+            </button>
+          </span>
+        </div>
+        @if (envio.estado() !== 'aguardando' && envio.estado() !== 'concluido') {
+          <div
+            class="barra"
+            role="progressbar"
+            [attr.aria-valuenow]="percentual(envio)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-label]="'Progresso de ' + envio.arquivo.name"
+          >
+            <span [style.width.%]="percentual(envio)"></span>
+          </div>
+        }
+        @if (envio.erro(); as mensagem) {
+          <p class="mensagem-erro" role="alert">{{ mensagem }}</p>
+        }
+      </li>
+    }
+  </ul>
+}

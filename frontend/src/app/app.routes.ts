@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard, autenticadoGuard, visitanteGuard } from './core/auth/guards';
+import { enviosPendentesGuard } from './core/envio/envios-pendentes.guard';
 
 export const routes: Routes = [
   {
@@ -27,11 +28,13 @@ export const routes: Routes = [
       {
         path: 'chamados/novo',
         title: 'Novo chamado',
+        canDeactivate: [enviosPendentesGuard],
         loadComponent: () => import('./features/chamados/novo/novo-chamado').then((m) => m.NovoChamado),
       },
       {
         path: 'chamados/:id',
         title: 'Chamado',
+        canDeactivate: [enviosPendentesGuard],
         loadComponent: () => import('./features/chamados/detalhe/detalhe-chamado').then((m) => m.DetalheChamado),
       },
       {

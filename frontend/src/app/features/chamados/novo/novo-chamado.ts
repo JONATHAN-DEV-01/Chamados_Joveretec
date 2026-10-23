@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -7,9 +7,11 @@ import { ChamadoService } from '../../../core/api/chamado.service';
 import { ProjetoService, TAMANHO_MAXIMO } from '../../../core/api/projeto.service';
 import { UsuarioService } from '../../../core/api/usuario.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ChamadoResumo, URGENCIAS, Urgencia } from '../../../core/models/chamado';
+import { filaDeEnvios } from '../../../core/envio/fila-de-envios';
+import { Chamado, ChamadoResumo, URGENCIAS, Urgencia } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { listaDeApoio } from '../../../shared/carregamento';
+import { AreaDeAnexos } from '../../../shared/componentes/area-de-anexos';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
 import { RotuloUrgenciaPipe } from '../../../shared/rotulos';
@@ -17,7 +19,7 @@ import { SeletorResponsavel } from '../seletor-responsavel';
 
 @Component({
   selector: 'app-novo-chamado',
-  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsavel],
+  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsavel, AreaDeAnexos],
   templateUrl: './novo-chamado.html',
   styleUrl: './novo-chamado.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -36,6 +38,9 @@ export class NovoChamado implements OnInit {
   protected readonly projetos = listaDeApoio(inject(ProjetoService).listarParaSelecao());
   protected readonly usuarios = listaDeApoio(inject(UsuarioService).listarAtivos());
   protected readonly salvando = signal(false);
+  /** Anexos da abertura: escolhidos antes e enviados logo depois de o chamado ser criado. */
+  protected readonly envios = filaDeEnvios();
+  protected readonly criado = signal<Chamado | null>(null);
 
   protected readonly formulario = inject(NonNullableFormBuilder).group({
     projetoId: ['', Validators.required],
@@ -55,6 +60,16 @@ export class NovoChamado implements OnInit {
     { initialValue: [] as ChamadoResumo[] },
   );
   protected readonly fimDaFila = computed(() => this.fila().length + 1);
+
+  constructor() {
+    // Com o chamado criado e todos os anexos enviados, segue para o detalhe.
+    effect(() => {
+      const chamado = this.criado();
+      if (chamado && this.envios.prontos()) {
+        void this.router.navigate(['/chamados', chamado.id]);
+      }
+    });
+  }
 
   ngOnInit(): void {
     const projetoId = this.projetoId();
@@ -82,7 +97,9 @@ export class NovoChamado implements OnInit {
       .subscribe({
         next: (criado) => {
           this.notificacao.sucesso('Chamado criado.');
-          void this.router.navigate(['/chamados', criado.id]);
+          this.formulario.disable();
+          this.criado.set(criado);
+          this.envios.iniciarTodos(() => of({ chamadoId: criado.id, acompanhamentoId: null }));
         },
         error: (erro: unknown) => {
           if (!aplicarErrosDoServidor(this.formulario, erro)) {

@@ -1,0 +1,96 @@
+.zona {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--cor-borda);
+  border-radius: var(--raio);
+  color: var(--cor-texto-suave);
+  font-size: 0.9rem;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.zona.arrastando {
+  border-color: var(--cor-destaque);
+  background: var(--cor-destaque-suave);
+}
+
+.zona.desabilitada {
+  opacity: 0.5;
+}
+
+.zona label:focus-within,
+.zona:has(input:focus-visible) label {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.envios {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.envio {
+  padding: 6px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-fundo);
+}
+
+.envio.erro {
+  border-color: var(--cor-destaque);
+}
+
+.linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.nome {
+  flex: 1 1 140px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estado {
+  font-variant-numeric: tabular-nums;
+  color: var(--cor-texto-suave);
+}
+
+.botoes {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.barra {
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--cor-painel-forte);
+}
+
+.barra span {
+  display: block;
+  height: 100%;
+  background: var(--cor-destaque);
+  transition: width 0.2s;
+}
+
+.mensagem-erro {
+  margin: 6px 0 0;
+  color: var(--cor-destaque);
+  font-size: 0.85rem;
+}

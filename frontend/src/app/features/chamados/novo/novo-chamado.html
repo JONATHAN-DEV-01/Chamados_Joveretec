@@ -63,9 +63,24 @@
     </span>
   </div>
 
-  <div class="acoes">
-    <button type="submit" class="btn btn-primario" [disabled]="salvando()">
-      {{ salvando() ? 'Salvando…' : 'Criar chamado' }}
-    </button>
+  <div class="campo">
+    <span class="rotulo">Anexos (opcional)</span>
+    <app-area-de-anexos [fila]="envios" idCampo="anexos-chamado" [desabilitada]="salvando()" />
   </div>
+
+  @if (criado(); as chamado) {
+    <div class="alerta alerta-info enviando" role="status">
+      <span>
+        Chamado #{{ chamado.id }} criado.
+        {{ envios.comErro() ? 'Alguns anexos falharam: retome ou remova-os.' : 'Enviando os anexos…' }}
+      </span>
+      <a class="btn btn-pequeno" [routerLink]="['/chamados', chamado.id]">Ir para o chamado</a>
+    </div>
+  } @else {
+    <div class="acoes">
+      <button type="submit" class="btn btn-primario" [disabled]="salvando()">
+        {{ salvando() ? 'Salvando…' : 'Criar chamado' }}
+      </button>
+    </div>
+  }
 </form>
