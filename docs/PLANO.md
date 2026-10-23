@@ -1,7 +1,8 @@
 # Plano — Sistema de Chamados Joveretec
 
-> Status: **Parte 1 concluída** — backend implementado e testado (61 testes passando).
-> As seções abaixo refletem o que foi implementado de fato. Parte 2: frontend, CI/CD e deploy.
+> Status: **Partes 1 e 2 concluídas**. Backend (61 testes) e frontend Angular 22 (54 testes) implementados,
+> CI no GitHub Actions e deploy preparado (Render, Vercel, Supabase). Para rodar, veja o [README](../README.md);
+> os passos manuais estão em [PENDENCIAS.md](../PENDENCIAS.md). As seções abaixo descrevem o backend.
 
 ## 1. Visão geral
 
