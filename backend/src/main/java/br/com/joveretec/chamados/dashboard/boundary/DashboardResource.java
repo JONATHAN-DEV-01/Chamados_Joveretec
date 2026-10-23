@@ -5,9 +5,13 @@ import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.MeusChamadosDT
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorDesenvolvedorDTO;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorStatusDTO;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorUrgenciaDTO;
+import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.UltimaAtualizacaoDTO;
 import br.com.joveretec.chamados.dashboard.control.DashboardService;
 import br.com.joveretec.chamados.usuario.entity.Perfil;
 import jakarta.annotation.security.RolesAllowed;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -42,6 +46,15 @@ public class DashboardResource {
     @Path("/por-desenvolvedor")
     public List<TotalPorDesenvolvedorDTO> porDesenvolvedor(@QueryParam("projetoId") Long projetoId) {
         return dashboard.porDesenvolvedor(projetoId).stream().map(TotalPorDesenvolvedorDTO::de).toList();
+    }
+
+    @GET
+    @Path("/ultimas-atualizacoes")
+    public List<UltimaAtualizacaoDTO> ultimasAtualizacoes(
+            @QueryParam("limite") @DefaultValue("10")
+            @Min(value = 1, message = "O limite deve ser no mínimo 1.")
+            @Max(value = 50, message = "O limite deve ser no máximo 50.") int limite) {
+        return dashboard.ultimasAtualizacoes(usuarioLogado.id(), limite).stream().map(UltimaAtualizacaoDTO::de).toList();
     }
 
     @GET

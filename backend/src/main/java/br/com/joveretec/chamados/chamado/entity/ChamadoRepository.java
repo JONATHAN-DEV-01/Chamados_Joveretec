@@ -7,6 +7,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,6 +44,11 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
         }
         update("posicao = posicao + :delta where projeto.id = :projetoId and posicao between :de and :ate",
                 Parameters.with("delta", delta).and("projetoId", projetoId).and("de", de).and("ate", ate));
+    }
+
+    /** Marca atividade recente no chamado sem incrementar a versão (evita 409 em quem está editando). */
+    public void registrarAtividade(Long chamadoId) {
+        update("ultimaAtividadeEm = ?1 where id = ?2", Instant.now(), chamadoId);
     }
 
     /** Relê o chamado do banco (usado após bloquear o projeto, para obter a posição atual). */

@@ -1,5 +1,7 @@
 package br.com.joveretec.chamados.dashboard.control;
 
+import br.com.joveretec.chamados.chamado.entity.Acompanhamento;
+import br.com.joveretec.chamados.chamado.entity.AcompanhamentoRepository;
 import br.com.joveretec.chamados.chamado.entity.ChamadoRepository;
 import br.com.joveretec.chamados.chamado.entity.ContagemPorResponsavel;
 import br.com.joveretec.chamados.chamado.entity.ContagemPorStatus;
@@ -23,9 +25,17 @@ public class DashboardService {
     private static final long TIMEOUT_SEGUNDOS = 5;
 
     private final ChamadoRepository chamados;
+    private final AcompanhamentoRepository acompanhamentos;
 
-    public DashboardService(ChamadoRepository chamados) {
+    public DashboardService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos) {
         this.chamados = chamados;
+        this.acompanhamentos = acompanhamentos;
+    }
+
+    /** Acompanhamentos mais recentes nos chamados em que o usuário é responsável ou autor. */
+    @Timeout(value = TIMEOUT_SEGUNDOS, unit = ChronoUnit.SECONDS)
+    public List<Acompanhamento> ultimasAtualizacoes(Long usuarioId, int limite) {
+        return acompanhamentos.ultimosDosChamadosDoUsuario(usuarioId, limite);
     }
 
     @Timeout(value = TIMEOUT_SEGUNDOS, unit = ChronoUnit.SECONDS)

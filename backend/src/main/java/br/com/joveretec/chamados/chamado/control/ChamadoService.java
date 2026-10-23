@@ -1,5 +1,6 @@
 package br.com.joveretec.chamados.chamado.control;
 
+import br.com.joveretec.chamados.chamado.entity.AcompanhamentoRepository;
 import br.com.joveretec.chamados.chamado.entity.CampoHistorico;
 import br.com.joveretec.chamados.chamado.entity.Chamado;
 import br.com.joveretec.chamados.chamado.entity.ChamadoRepository;
@@ -24,13 +25,15 @@ public class ChamadoService {
     private static final Logger LOG = Logger.getLogger(ChamadoService.class);
 
     private final ChamadoRepository chamados;
+    private final AcompanhamentoRepository acompanhamentos;
     private final HistoricoService historico;
     private final ProjetoService projetos;
     private final UsuarioService usuarios;
 
-    public ChamadoService(ChamadoRepository chamados, HistoricoService historico,
-                          ProjetoService projetos, UsuarioService usuarios) {
+    public ChamadoService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos,
+                          HistoricoService historico, ProjetoService projetos, UsuarioService usuarios) {
         this.chamados = chamados;
+        this.acompanhamentos = acompanhamentos;
         this.historico = historico;
         this.projetos = projetos;
         this.usuarios = usuarios;
@@ -43,6 +46,16 @@ public class ChamadoService {
     public Chamado buscar(Long id) {
         return chamados.buscarCompleto(id)
                 .orElseThrow(() -> ExcecaoDeNegocio.naoEncontrado("Chamado não encontrado."));
+    }
+
+    /** Soma do tempo gasto informado nos acompanhamentos publicados. */
+    public long tempoGastoTotalMinutos(Long chamadoId) {
+        return acompanhamentos.tempoGastoTotalMinutos(chamadoId);
+    }
+
+    /** Atualiza a "última atividade" do chamado sem alterar a versão (lock otimista). */
+    public void registrarAtividade(Long chamadoId) {
+        chamados.registrarAtividade(chamadoId);
     }
 
     public Pagina<HistoricoChamado> historico(Long chamadoId, Paginacao paginacao) {
@@ -129,7 +142,7 @@ public class ChamadoService {
     }
 
     /** Carrega o chamado com suas relações e garante que o projeto dele não está arquivado. */
-    private Chamado buscarParaAlteracao(Long id) {
+    public Chamado buscarParaAlteracao(Long id) {
         Chamado chamado = buscar(id);
         if (chamado.getProjeto().isArquivado()) {
             throw ExcecaoDeNegocio.regraDeNegocio("O projeto está arquivado e não aceita alterações em chamados.");

@@ -1,11 +1,14 @@
 package br.com.joveretec.chamados.dashboard.boundary;
 
 import br.com.joveretec.chamados.chamado.boundary.ChamadoDTOs.ReferenciaDTO;
+import br.com.joveretec.chamados.chamado.entity.Acompanhamento;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
+import br.com.joveretec.chamados.chamado.entity.TipoAcompanhamento;
 import br.com.joveretec.chamados.chamado.entity.Urgencia;
 import br.com.joveretec.chamados.dashboard.control.DashboardService.MeusChamados;
 import br.com.joveretec.chamados.dashboard.control.DashboardService.TotaisDoDesenvolvedor;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +40,28 @@ public final class DashboardDTOs {
                     porStatus.get(StatusChamado.ABERTO), porStatus.get(StatusChamado.EM_ANDAMENTO),
                     porStatus.get(StatusChamado.CONCLUIDO), totais.total());
         }
+    }
+
+    public record UltimaAtualizacaoDTO(Long acompanhamentoId, ReferenciaChamadoDTO chamado, ReferenciaDTO autor,
+                                       TipoAcompanhamento tipo, String resumo, Instant criadoEm) {
+
+        private static final int TAMANHO_RESUMO = 160;
+
+        static UltimaAtualizacaoDTO de(Acompanhamento a) {
+            return new UltimaAtualizacaoDTO(a.getId(),
+                    new ReferenciaChamadoDTO(a.getChamado().getId(), a.getChamado().getTitulo()),
+                    new ReferenciaDTO(a.getAutor().getId(), a.getAutor().getNome()), a.getTipo(),
+                    resumo(a.getTexto()), a.getCriadoEm());
+        }
+
+        /** Primeiros caracteres do texto, em uma linha. */
+        private static String resumo(String texto) {
+            String linha = texto.replaceAll("\\s+", " ").strip();
+            return linha.length() <= TAMANHO_RESUMO ? linha : linha.substring(0, TAMANHO_RESUMO - 1) + "…";
+        }
+    }
+
+    public record ReferenciaChamadoDTO(Long id, String titulo) {
     }
 
     public record MeusChamadosDTO(long total, List<TotalPorStatusDTO> porStatus,

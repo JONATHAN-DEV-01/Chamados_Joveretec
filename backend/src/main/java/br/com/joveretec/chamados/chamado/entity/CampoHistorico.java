@@ -7,5 +7,7 @@ public enum CampoHistorico {
     URGENCIA,
     STATUS,
     RESPONSAVEL,
-    POSICAO
+    POSICAO,
+    ANEXO_ADICIONADO,
+    ANEXO_REMOVIDO
 }

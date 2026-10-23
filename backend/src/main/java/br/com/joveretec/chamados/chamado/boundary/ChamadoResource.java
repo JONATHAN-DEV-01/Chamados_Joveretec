@@ -70,7 +70,7 @@ public class ChamadoResource {
     @GET
     @Path("/{id}")
     public ChamadoDTO buscar(@PathParam("id") Long id) {
-        return ChamadoDTO.de(chamados.buscar(id));
+        return detalhe(chamados.buscar(id));
     }
 
     @POST
@@ -78,7 +78,7 @@ public class ChamadoResource {
                           @Context UriInfo uriInfo) {
         Chamado criado = chamados.criar(requisicao.paraComando(), usuarioLogado.id());
         return Response.created(uriInfo.getAbsolutePathBuilder().path(String.valueOf(criado.getId())).build())
-                .entity(ChamadoDTO.de(criado))
+                .entity(detalhe(criado))
                 .build();
     }
 
@@ -86,32 +86,36 @@ public class ChamadoResource {
     @Path("/{id}")
     public ChamadoDTO editar(@PathParam("id") Long id,
                              @Valid @NotNull(message = CORPO_OBRIGATORIO) AtualizarChamadoRequest requisicao) {
-        return ChamadoDTO.de(chamados.editar(id, requisicao.paraComando(), usuarioLogado.id()));
+        return detalhe(chamados.editar(id, requisicao.paraComando(), usuarioLogado.id()));
     }
 
     @PATCH
     @Path("/{id}/status")
     public ChamadoDTO alterarStatus(@PathParam("id") Long id,
                                     @Valid @NotNull(message = CORPO_OBRIGATORIO) AlterarStatusRequest requisicao) {
-        return ChamadoDTO.de(chamados.alterarStatus(id, requisicao.status(), usuarioLogado.id()));
+        return detalhe(chamados.alterarStatus(id, requisicao.status(), usuarioLogado.id()));
     }
 
     @POST
     @Path("/{id}/atribuir-a-mim")
     public ChamadoDTO atribuirAMim(@PathParam("id") Long id) {
-        return ChamadoDTO.de(chamados.atribuirAoAutor(id, usuarioLogado.id()));
+        return detalhe(chamados.atribuirAoAutor(id, usuarioLogado.id()));
     }
 
     @PUT
     @Path("/{id}/posicao")
     public ChamadoDTO reordenar(@PathParam("id") Long id,
                                 @Valid @NotNull(message = CORPO_OBRIGATORIO) ReordenarRequest requisicao) {
-        return ChamadoDTO.de(chamados.reordenar(id, requisicao.posicao(), usuarioLogado.id()));
+        return detalhe(chamados.reordenar(id, requisicao.posicao(), usuarioLogado.id()));
     }
 
     @GET
     @Path("/{id}/historico")
     public Pagina<HistoricoDTO> historico(@PathParam("id") Long id, @Valid @BeanParam Paginacao paginacao) {
         return chamados.historico(id, paginacao).map(HistoricoDTO::de);
+    }
+
+    private ChamadoDTO detalhe(Chamado chamado) {
+        return ChamadoDTO.de(chamado, chamados.tempoGastoTotalMinutos(chamado.getId()));
     }
 }

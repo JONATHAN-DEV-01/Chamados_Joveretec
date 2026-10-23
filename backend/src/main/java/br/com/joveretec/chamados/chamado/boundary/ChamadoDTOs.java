@@ -33,26 +33,30 @@ public final class ChamadoDTOs {
         }
     }
 
+    /** {@code ultimaAtividadeEm} inclui acompanhamentos e anexos; {@code atualizadoEm}, só os dados do chamado. */
     public record ChamadoResumoDTO(Long id, String titulo, Urgencia urgencia, StatusChamado status, int posicao,
-                                   ReferenciaDTO projeto, ReferenciaDTO responsavel, Instant atualizadoEm) {
+                                   ReferenciaDTO projeto, ReferenciaDTO responsavel, Instant atualizadoEm,
+                                   Instant ultimaAtividadeEm) {
 
         public static ChamadoResumoDTO de(Chamado chamado) {
             return new ChamadoResumoDTO(chamado.getId(), chamado.getTitulo(), chamado.getUrgencia(),
                     chamado.getStatus(), chamado.getPosicao(), ReferenciaDTO.de(chamado.getProjeto()),
-                    ReferenciaDTO.de(chamado.getResponsavel()), chamado.getAtualizadoEm());
+                    ReferenciaDTO.de(chamado.getResponsavel()), chamado.getAtualizadoEm(),
+                    chamado.getUltimaAtividadeEm());
         }
     }
 
     public record ChamadoDTO(Long id, String titulo, String descricao, Urgencia urgencia, StatusChamado status,
                              int posicao, ReferenciaDTO projeto, ReferenciaDTO responsavel, ReferenciaDTO criadoPor,
-                             Instant criadoEm, Instant atualizadoEm, long versao) {
+                             Instant criadoEm, Instant atualizadoEm, Instant ultimaAtividadeEm,
+                             long tempoGastoTotalMinutos, long versao) {
 
-        public static ChamadoDTO de(Chamado chamado) {
+        public static ChamadoDTO de(Chamado chamado, long tempoGastoTotalMinutos) {
             return new ChamadoDTO(chamado.getId(), chamado.getTitulo(), chamado.getDescricao(),
                     chamado.getUrgencia(), chamado.getStatus(), chamado.getPosicao(),
                     ReferenciaDTO.de(chamado.getProjeto()), ReferenciaDTO.de(chamado.getResponsavel()),
                     ReferenciaDTO.de(chamado.getCriadoPor()), chamado.getCriadoEm(), chamado.getAtualizadoEm(),
-                    chamado.getVersao());
+                    chamado.getUltimaAtividadeEm(), tempoGastoTotalMinutos, chamado.getVersao());
         }
     }
 

@@ -12,6 +12,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
 import org.hibernate.annotations.CreationTimestamp;
@@ -72,6 +74,13 @@ public class Chamado {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
+    /**
+     * Última atividade: edições do chamado (aqui) e acompanhamentos/anexos
+     * ({@link ChamadoRepository#registrarAtividade}, que não altera a versão).
+     */
+    @Column(name = "ultima_atividade_em", nullable = false)
+    private Instant ultimaAtividadeEm;
+
     protected Chamado() {
     }
 
@@ -84,6 +93,12 @@ public class Chamado {
         this.responsavel = responsavel;
         this.criadoPor = criadoPor;
         this.posicao = posicao;
+    }
+
+    @PrePersist
+    @PreUpdate
+    void registrarAtividade() {
+        this.ultimaAtividadeEm = Instant.now();
     }
 
     public void alterarTitulo(String titulo) {
@@ -156,5 +171,9 @@ public class Chamado {
 
     public Instant getAtualizadoEm() {
         return atualizadoEm;
+    }
+
+    public Instant getUltimaAtividadeEm() {
+        return ultimaAtividadeEm;
     }
 }
