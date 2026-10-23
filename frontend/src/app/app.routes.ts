@@ -13,7 +13,12 @@ export const routes: Routes = [
     canActivate: [autenticadoGuard],
     loadComponent: () => import('./layout/shell').then((m) => m.Shell),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'conta' },
+      { path: '', pathMatch: 'full', redirectTo: 'chamados' },
+      {
+        path: 'chamados',
+        title: 'Chamados',
+        loadComponent: () => import('./features/chamados/lista/lista-chamados').then((m) => m.ListaChamados),
+      },
       {
         path: 'conta',
         title: 'Minha conta',

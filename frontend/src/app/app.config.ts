@@ -1,5 +1,13 @@
+import { registerLocaleData } from '@angular/common';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
+import localePt from '@angular/common/locales/pt';
+import {
+  ApplicationConfig,
+  LOCALE_ID,
+  inject,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+} from '@angular/core';
 import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { ConfiguracaoService } from './core/api/configuracao.service';
@@ -17,8 +25,11 @@ function inicializar() {
   ]);
 }
 
+registerLocaleData(localePt);
+
 export const appConfig: ApplicationConfig = {
   providers: [
+    { provide: LOCALE_ID, useValue: 'pt-BR' },
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch(), withInterceptors([apiInterceptor])),

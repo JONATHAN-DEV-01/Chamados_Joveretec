@@ -1,0 +1,135 @@
+<header class="cabecalho-pagina">
+  <h1>Chamados</h1>
+  <a class="btn btn-primario" routerLink="/chamados/novo">Novo chamado</a>
+</header>
+
+<section class="cartao filtros" aria-label="Filtros">
+  <div class="linha">
+    <div class="campo busca">
+      <label for="busca">Buscar</label>
+      <input id="busca" type="search" placeholder="Título ou descrição" [formControl]="campoBusca" />
+    </div>
+
+    <div class="campo">
+      <label for="filtro-projeto">Projeto</label>
+      <select id="filtro-projeto" (change)="filtrar({ projetoId: valorSelect($event) })">
+        <option value="">Todos</option>
+        @for (projeto of projetos(); track projeto.id) {
+          <option [value]="projeto.id" [selected]="String(projeto.id) === projetoId()">{{ projeto.nome }}{{ projeto.arquivado ? ' (arquivado)' : '' }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="campo">
+      <label for="filtro-responsavel">Responsável</label>
+      <select
+        id="filtro-responsavel"
+        (change)="filtrar({ responsavel: valorSelect($event) })"
+      >
+        <option value="">Todos</option>
+        @if (usuarioLogado(); as eu) {
+          <option [value]="eu.id" [selected]="String(eu.id) === responsavel()">Eu ({{ eu.nome }})</option>
+        }
+        <option [value]="SEM_RESPONSAVEL" [selected]="responsavel() === SEM_RESPONSAVEL">Sem responsável</option>
+        @for (usuario of usuarios(); track usuario.id) {
+          @if (usuario.id !== usuarioLogado()?.id) {
+            <option [value]="usuario.id" [selected]="String(usuario.id) === responsavel()">{{ usuario.nome }}</option>
+          }
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="linha chips">
+    <div class="grupo" role="group" aria-labelledby="rotulo-urgencia">
+      <span id="rotulo-urgencia" class="rotulo">Urgência</span>
+      @for (urgencia of URGENCIAS; track urgencia) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="urgenciasSelecionadas().includes(urgencia)"
+          (click)="alternarUrgencia(urgencia)"
+        >
+          {{ urgencia | rotuloUrgencia }}
+        </button>
+      }
+    </div>
+
+    <div class="grupo" role="group" aria-labelledby="rotulo-status">
+      <span id="rotulo-status" class="rotulo">Status</span>
+      @for (status of STATUS; track status) {
+        <button
+          type="button"
+          class="chip"
+          [attr.aria-pressed]="statusSelecionados().includes(status)"
+          (click)="alternarStatus(status)"
+        >
+          {{ status | rotuloStatus }}
+        </button>
+      }
+    </div>
+
+    @if (temFiltros()) {
+      <button type="button" class="btn btn-fantasma btn-pequeno limpar" (click)="limparFiltros()">Limpar filtros</button>
+    }
+  </div>
+</section>
+
+@if (lista.erro(); as erro) {
+  <p class="alerta" role="alert">
+    {{ erro }}
+    <button type="button" class="btn btn-pequeno" (click)="lista.recarregar()">Tentar novamente</button>
+  </p>
+}
+
+@if (lista.dados(); as pagina) {
+  <div class="tabela-container" [class.carregando]="lista.carregando()" [attr.aria-busy]="lista.carregando()">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col">Urgência</th>
+          <th scope="col">Título</th>
+          <th scope="col">Projeto</th>
+          <th scope="col">Responsável</th>
+          <th scope="col">Status</th>
+          <th scope="col" title="Posição na fila do projeto">Fila</th>
+          <th scope="col">Atualizado</th>
+          <th scope="col"><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (chamado of pagina.itens; track chamado.id) {
+          <tr>
+            <td><app-badge-urgencia [urgencia]="chamado.urgencia" /></td>
+            <td class="titulo"><a [routerLink]="['/chamados', chamado.id]">{{ chamado.titulo }}</a></td>
+            <td>{{ chamado.projeto.nome }}</td>
+            <td>
+              @if (chamado.responsavel; as responsavel) {
+                {{ responsavel.nome }}
+              } @else {
+                <span class="texto-suave">—</span>
+              }
+            </td>
+            <td><app-badge-status [status]="chamado.status" /></td>
+            <td class="texto-suave">#{{ chamado.posicao }}</td>
+            <td class="texto-suave data">{{ chamado.atualizadoEm | date: 'dd/MM/yy HH:mm' }}</td>
+            <td class="acao">
+              @if (chamado.responsavel?.id !== usuarioLogado()?.id) {
+                <button type="button" class="btn btn-pequeno" (click)="atribuirAMim(chamado)">Atribuir a mim</button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="8" class="vazio">
+              {{ temFiltros() ? 'Nenhum chamado encontrado com esses filtros.' : 'Nenhum chamado ainda.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-paginacao [pagina]="pagina" (mudar)="irParaPagina($event)" />
+} @else if (lista.carregando()) {
+  <p class="vazio">Carregando chamados…</p>
+}
