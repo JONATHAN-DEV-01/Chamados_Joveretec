@@ -169,6 +169,14 @@ class AcompanhamentoResourceTest {
     }
 
     @Test
+    void resumoDasUltimasAtualizacoesNaoMostraMarcacaoMarkdown() {
+        publicar(outroDev.token(), chamadoId, "**Causa**: `fonte` ausente\n- ajustar CSS\n- testar");
+        como(autor.token()).get("/api/dashboard/ultimas-atualizacoes")
+                .then().statusCode(200)
+                .body("[0].resumo", equalTo("Causa: fonte ausente ajustar CSS testar"));
+    }
+
+    @Test
     void ultimasAtualizacoesDoDashboardMostramChamadosDoUsuario() {
         publicar(outroDev.token(), chamadoId, "Atualização para o autor do chamado");
 

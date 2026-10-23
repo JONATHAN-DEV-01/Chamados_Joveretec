@@ -54,9 +54,12 @@ public final class DashboardDTOs {
                     resumo(a.getTexto()), a.getCriadoEm());
         }
 
-        /** Primeiros caracteres do texto, em uma linha. */
+        /** Primeiros caracteres do texto, em uma linha e sem a marcação do Markdown. */
         private static String resumo(String texto) {
-            String linha = texto.replaceAll("\\s+", " ").strip();
+            String linha = texto.replaceAll("(?m)^\\s*([-*+]|\\d+\\.)\\s+", "")
+                    .replaceAll("[*_`#>~]", "")
+                    .replaceAll("\\s+", " ")
+                    .strip();
             return linha.length() <= TAMANHO_RESUMO ? linha : linha.substring(0, TAMANHO_RESUMO - 1) + "…";
         }
     }
