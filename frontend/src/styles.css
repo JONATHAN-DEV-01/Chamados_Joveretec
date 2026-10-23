@@ -1,0 +1,305 @@
+/*
+ * Tema global. As 4 cores base vêm do backend (GET /api/configuracoes) e são aplicadas
+ * pelo TemaService em :root; todo o resto é derivado delas, então trocar a paleta
+ * muda a aplicação inteira.
+ */
+:root {
+  --cor-fundo: #171717;
+  --cor-superficie: #444444;
+  --cor-destaque: #da0037;
+  --cor-texto: #ededed;
+  --cor-sobre-destaque: #ffffff;
+
+  --cor-painel: color-mix(in srgb, var(--cor-superficie) 35%, var(--cor-fundo));
+  --cor-painel-forte: color-mix(in srgb, var(--cor-superficie) 60%, var(--cor-fundo));
+  --cor-borda: color-mix(in srgb, var(--cor-superficie) 85%, var(--cor-fundo));
+  --cor-texto-suave: color-mix(in srgb, var(--cor-texto) 65%, var(--cor-fundo));
+  --cor-destaque-suave: color-mix(in srgb, var(--cor-destaque) 18%, var(--cor-fundo));
+  --cor-sucesso: #3fb27f;
+  --cor-alerta: #e0a43a;
+
+  --raio: 8px;
+  --espaco: 16px;
+  --sombra: 0 4px 16px rgb(0 0 0 / 25%);
+  --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font-family: var(--fonte);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--cor-destaque);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--espaco);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+/* ---------- Botões ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-painel-forte);
+  color: var(--cor-texto);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s, background 0.15s;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.15);
+  text-decoration: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:focus-visible,
+.campo :is(input, select, textarea):focus-visible,
+.chip:focus-visible {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.btn-primario {
+  border-color: var(--cor-destaque);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.btn-fantasma {
+  border-color: transparent;
+  background: transparent;
+}
+
+.btn-perigo {
+  border-color: var(--cor-destaque);
+  background: transparent;
+  color: var(--cor-destaque);
+}
+
+.btn-pequeno {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+}
+
+/* ---------- Formulários ---------- */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.campo > label,
+.rotulo {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.campo :is(input, select, textarea) {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.campo textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.campo :is(input, select, textarea).ng-invalid.ng-touched {
+  border-color: var(--cor-destaque);
+}
+
+.dica {
+  color: var(--cor-texto-suave);
+  font-size: 0.8rem;
+}
+
+.grade-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--espaco);
+}
+
+.acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- Cartões, tabelas e estados ---------- */
+.cartao {
+  padding: var(--espaco);
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-painel);
+}
+
+.cabecalho-pagina {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaco);
+  margin-bottom: var(--espaco);
+}
+
+.cabecalho-pagina h1 {
+  margin: 0;
+}
+
+.tabela-container {
+  overflow-x: auto;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+}
+
+table.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--cor-painel);
+}
+
+.tabela th,
+.tabela td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--cor-borda);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabela th {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.tabela tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabela tbody tr:hover {
+  background: color-mix(in srgb, var(--cor-superficie) 20%, transparent);
+}
+
+.vazio {
+  padding: 32px var(--espaco);
+  color: var(--cor-texto-suave);
+  text-align: center;
+}
+
+.alerta {
+  padding: 10px 12px;
+  border: 1px solid var(--cor-destaque);
+  border-radius: var(--raio);
+  background: var(--cor-destaque-suave);
+}
+
+.alerta-info {
+  border-color: var(--cor-borda);
+  background: var(--cor-painel);
+}
+
+.texto-suave {
+  color: var(--cor-texto-suave);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cor-texto);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--cor-destaque);
+  background: var(--cor-destaque-suave);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

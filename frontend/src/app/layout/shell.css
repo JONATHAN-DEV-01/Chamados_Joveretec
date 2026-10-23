@@ -1,0 +1,159 @@
+:host {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.lateral {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: 100vh;
+  padding: 20px 12px;
+  overflow-y: auto;
+  border-right: 1px solid var(--cor-borda);
+  background: var(--cor-fundo);
+}
+
+.marca {
+  padding: 0 10px;
+  color: var(--cor-texto);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.marca::before {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 2px;
+  background: var(--cor-destaque);
+  content: '';
+}
+
+nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.secao {
+  margin: 0 0 6px;
+  padding: 0 10px;
+}
+
+nav a {
+  display: block;
+  padding: 8px 10px;
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  color: var(--cor-texto-suave);
+}
+
+nav a:hover {
+  background: var(--cor-painel);
+  color: var(--cor-texto);
+  text-decoration: none;
+}
+
+nav a.ativo {
+  border-left-color: var(--cor-destaque);
+  background: var(--cor-painel);
+  color: var(--cor-texto);
+}
+
+.principal {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 var(--espaco);
+  border-bottom: 1px solid var(--cor-borda);
+  background: color-mix(in srgb, var(--cor-fundo) 92%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.topo-direita {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.botao-menu {
+  display: none;
+  font-size: 1.2rem;
+}
+
+.conteudo {
+  width: 100%;
+  max-width: 1200px;
+  padding: 24px var(--espaco) 48px;
+}
+
+.pular {
+  position: absolute;
+  top: -40px;
+  left: 8px;
+  z-index: 20;
+  padding: 8px 12px;
+  border-radius: var(--raio);
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+}
+
+.pular:focus {
+  top: 8px;
+}
+
+.veu {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  :host {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .lateral {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.2s;
+    box-shadow: var(--sombra);
+  }
+
+  .lateral.aberta {
+    transform: none;
+  }
+
+  .botao-menu {
+    display: inline-flex;
+  }
+
+  .veu {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: block;
+    background: rgb(0 0 0 / 50%);
+  }
+}

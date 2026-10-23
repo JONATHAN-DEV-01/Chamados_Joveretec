@@ -1,0 +1,41 @@
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+<aside class="lateral" [class.aberta]="menuAberto()" id="menu-lateral">
+  <a class="marca" routerLink="/dashboard">{{ configuracao().geral.nomeSistema }}</a>
+
+  <nav aria-label="Menu principal">
+    <ul>
+      @for (item of menuPrincipal; track item.rota) {
+        <li>
+          <a [routerLink]="item.rota" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">
+            {{ item.rotulo }}
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+</aside>
+
+<div class="principal">
+  <header class="topo">
+    <button
+      type="button"
+      class="btn btn-fantasma botao-menu"
+      (click)="alternarMenu()"
+      [attr.aria-expanded]="menuAberto()"
+      aria-controls="menu-lateral"
+    >
+      <span aria-hidden="true">☰</span>
+      <span class="sr-only">Abrir menu</span>
+    </button>
+    <div class="topo-direita"></div>
+  </header>
+
+  <main id="conteudo" class="conteudo">
+    <router-outlet />
+  </main>
+</div>
+
+@if (menuAberto()) {
+  <div class="veu" (click)="alternarMenu()" aria-hidden="true"></div>
+}
