@@ -11,9 +11,12 @@
           <div class="campo">
             <label [for]="'cor-' + cor.chave">{{ cor.rotulo }}</label>
             <div class="seletor-cor">
+              <!-- Não usa formControlName: dois inputs no mesmo controle não se atualizam entre si. -->
               <input
                 type="color"
-                [formControlName]="cor.chave"
+                [value]="corDoSeletor(cor.chave)"
+                (input)="escolherCor(cor.chave, $event)"
+                [disabled]="salvando()"
                 [attr.aria-label]="'Escolher cor: ' + cor.rotulo"
               />
               <input [id]="'cor-' + cor.chave" type="text" [formControlName]="cor.chave" maxlength="7" spellcheck="false" />

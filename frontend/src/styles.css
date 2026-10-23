@@ -225,6 +225,8 @@ h3 {
 }
 
 .tabela-container {
+  /* position: relative prende os .sr-only (absolutos) dentro da rolagem da tabela. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--cor-borda);
   border-radius: var(--raio);

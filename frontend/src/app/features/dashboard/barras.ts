@@ -27,7 +27,9 @@ export interface Barra {
             <span class="rotulo-barra">{{ barra.rotulo }}</span>
           }
           <span class="trilho" aria-hidden="true">
-            <span class="marca" [style.width.%]="largura(barra.valor)" [style.background]="barra.cor"></span>
+            @if (barra.valor > 0) {
+              <span class="marca" [style.width.%]="largura(barra.valor)" [style.background]="barra.cor"></span>
+            }
           </span>
           <span class="valor">{{ barra.valor }}</span>
         </li>
@@ -51,7 +53,7 @@ export class Barras {
   private readonly total = computed(() => this.barras().reduce((soma, b) => soma + b.valor, 0));
 
   protected largura(valor: number): number {
-    return valor === 0 ? 0 : (valor / this.maximo()) * 100;
+    return (valor / this.maximo()) * 100;
   }
 
   protected percentual(valor: number): number {

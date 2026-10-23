@@ -98,6 +98,18 @@ export class AdminConfiguracoes {
     });
   }
 
+  /** Valor para o `<input type="color">`, que só aceita `#rrggbb` (minúsculo). */
+  protected corDoSeletor(chave: keyof Paleta): string {
+    const valor = this.paleta()[chave];
+    return corHexValida(valor) ? valor!.toLowerCase() : '#000000';
+  }
+
+  protected escolherCor(chave: keyof Paleta, evento: Event): void {
+    const controle = this.formulario.controls.paleta.controls[chave];
+    controle.setValue((evento.target as HTMLInputElement).value.toUpperCase());
+    controle.markAsDirty();
+  }
+
   protected restaurarPadrao(): void {
     this.formulario.setValue(structuredClone(CONFIGURACAO_PADRAO));
     this.formulario.markAsDirty();
