@@ -30,7 +30,7 @@ public final class CaminhoDoAnexo {
      * (ex.: {@code "Relatório Final (v2).PDF"} → {@code "Relatorio-Final-v2.pdf"}).
      */
     public static String sanitizar(String nome) {
-        String semAcentos = Normalizer.normalize(nome == null ? "" : nome.strip(), Normalizer.Form.NFD)
+        String semAcentos = Normalizer.normalize(semDiretorio(nome), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "");
         int ponto = semAcentos.lastIndexOf('.');
         String base = ponto > 0 ? semAcentos.substring(0, ponto) : semAcentos;
@@ -45,6 +45,12 @@ public final class CaminhoDoAnexo {
             baseLimpa = baseLimpa.substring(0, limiteBase).replaceAll("-+$", "");
         }
         return extensao.isEmpty() ? baseLimpa : baseLimpa + "." + extensao;
+    }
+
+    /** Só o nome do arquivo: descarta qualquer diretório ("../", "C:\pasta\"). */
+    private static String semDiretorio(String nome) {
+        String texto = nome == null ? "" : nome.strip();
+        return texto.substring(Math.max(texto.lastIndexOf('/'), texto.lastIndexOf('\\')) + 1);
     }
 
     private static String limpar(String texto) {
