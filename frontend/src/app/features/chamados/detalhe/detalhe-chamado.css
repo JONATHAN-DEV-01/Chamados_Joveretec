@@ -1,0 +1,75 @@
+.migalha {
+  margin: 0 0 4px;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+h1 {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.selos {
+  display: flex;
+  gap: 8px;
+}
+
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: var(--espaco);
+  align-items: start;
+}
+
+.principal,
+.lateral {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+  min-width: 0;
+}
+
+.segmentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formulario h2,
+.cartao h2 {
+  margin-bottom: 4px;
+}
+
+.info dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.conflito,
+.alerta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 var(--espaco);
+}
+
+@media (max-width: 900px) {
+  .colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

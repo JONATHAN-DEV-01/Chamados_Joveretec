@@ -1,0 +1,84 @@
+<header class="cabecalho-pagina">
+  <h1>Fila do projeto</h1>
+  @if (idProjeto(); as id) {
+    <a class="btn btn-primario" routerLink="/chamados/novo" [queryParams]="{ projetoId: id }">Novo chamado neste projeto</a>
+  }
+</header>
+
+<div class="cartao topo">
+  <div class="campo">
+    <label for="projeto">Projeto</label>
+    <select id="projeto" (change)="escolherProjeto($event)">
+      <option value="">Selecione um projeto…</option>
+      @for (projeto of projetos(); track projeto.id) {
+        <option [value]="projeto.id" [selected]="String(projeto.id) === projetoId()">{{ projeto.nome }}</option>
+      }
+    </select>
+  </div>
+  <p class="dica">
+    Arraste pelo ícone ⠿ ou use as setas para definir a ordem de atendimento dentro do projeto. Na lista geral,
+    os chamados aparecem primeiro por urgência e, depois, nesta ordem.
+  </p>
+</div>
+
+@if (!projetoId()) {
+  <p class="vazio">Escolha um projeto para ver e reordenar a fila.</p>
+} @else {
+  @if (carregamento.erro(); as erro) {
+    <p class="alerta" role="alert">{{ erro }}</p>
+  }
+  @if (incompleta()) {
+    <p class="alerta alerta-info">
+      Mostrando os {{ itens().length }} primeiros chamados da fila. Os demais podem ser reposicionados na tela de cada
+      chamado.
+    </p>
+  }
+
+  <ol
+    class="fila"
+    cdkDropList
+    [cdkDropListData]="itens()"
+    [cdkDropListDisabled]="salvando()"
+    (cdkDropListDropped)="soltar($event)"
+    [attr.aria-busy]="salvando() || carregamento.carregando()"
+  >
+    @for (chamado of itens(); track chamado.id; let i = $index, primeiro = $first, ultimo = $last) {
+      <li class="item" cdkDrag [cdkDragData]="chamado">
+        <span class="alca" cdkDragHandle aria-hidden="true" title="Arrastar">⠿</span>
+        <span class="posicao">{{ i + 1 }}</span>
+        <div class="conteudo">
+          <a [routerLink]="['/chamados', chamado.id]">{{ chamado.titulo }}</a>
+          <div class="meta">
+            <app-badge-urgencia [urgencia]="chamado.urgencia" />
+            <app-badge-status [status]="chamado.status" />
+            <span class="texto-suave">{{ chamado.responsavel?.nome ?? 'Sem responsável' }}</span>
+          </div>
+        </div>
+        <div class="setas">
+          <button
+            type="button"
+            class="btn btn-pequeno"
+            [disabled]="primeiro || salvando()"
+            (click)="mover(i, i - 1)"
+            [attr.aria-label]="'Subir ' + chamado.titulo"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            class="btn btn-pequeno"
+            [disabled]="ultimo || salvando()"
+            (click)="mover(i, i + 1)"
+            [attr.aria-label]="'Descer ' + chamado.titulo"
+          >
+            ↓
+          </button>
+        </div>
+      </li>
+    } @empty {
+      @if (!carregamento.carregando()) {
+        <li class="vazio">Este projeto ainda não tem chamados.</li>
+      }
+    }
+  </ol>
+}

@@ -303,3 +303,21 @@ table.tabela {
     transition: none !important;
   }
 }
+
+/* Estados do CDK drag-and-drop */
+/* O preview do arrasto é anexado ao <body>, fora do encapsulamento do componente. */
+.cdk-drag-preview {
+  border: 1px solid var(--cor-destaque);
+  border-radius: var(--raio);
+  background: var(--cor-painel-forte);
+  box-shadow: var(--sombra);
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+}
+
+.cdk-drag-animating,
+.cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
+  transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}

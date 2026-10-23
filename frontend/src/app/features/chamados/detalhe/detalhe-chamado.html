@@ -1,0 +1,123 @@
+@if (carregamento.erro(); as erro) {
+  <p class="alerta" role="alert">{{ erro }}</p>
+  <a routerLink="/chamados">Voltar para a lista</a>
+}
+
+@if (chamado(); as c) {
+  <header class="cabecalho-pagina">
+    <div>
+      <p class="migalha"><a routerLink="/chamados">Chamados</a> / #{{ c.id }}</p>
+      <h1>{{ c.titulo }}</h1>
+      <div class="selos">
+        <app-badge-urgencia [urgencia]="c.urgencia" />
+        <app-badge-status [status]="c.status" />
+      </div>
+    </div>
+    @if (c.responsavel?.id !== usuarioLogado()?.id && !projetoArquivado()) {
+      <button type="button" class="btn" (click)="atribuirAMim()">Atribuir a mim</button>
+    }
+  </header>
+
+  @if (projetoArquivado()) {
+    <p class="alerta alerta-info">O projeto deste chamado está arquivado: ele pode ser consultado, mas não alterado.</p>
+  }
+  @if (conflito()) {
+    <div class="alerta conflito" role="alert">
+      <span>Este chamado foi alterado por outra pessoa enquanto você editava. Recarregue para ver a versão atual.</span>
+      <button type="button" class="btn btn-pequeno" (click)="recarregar()">Recarregar</button>
+    </div>
+  }
+
+  <div class="colunas">
+    <div class="principal">
+      <section class="cartao" aria-labelledby="titulo-status">
+        <h2 id="titulo-status">Status</h2>
+        <div class="segmentos" role="group" aria-labelledby="titulo-status">
+          @for (status of STATUS; track status) {
+            <button
+              type="button"
+              class="chip"
+              [attr.aria-pressed]="c.status === status"
+              [disabled]="projetoArquivado()"
+              (click)="c.status !== status && alterarStatus(status)"
+            >
+              {{ status | rotuloStatus }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <form class="cartao formulario" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+        <h2>Dados do chamado</h2>
+        <div class="campo">
+          <label for="titulo">Título</label>
+          <input id="titulo" type="text" formControlName="titulo" maxlength="200" />
+          <app-erro-campo [controle]="formulario.controls.titulo" />
+        </div>
+
+        <div class="campo">
+          <label for="descricao">Descrição</label>
+          <textarea id="descricao" formControlName="descricao" rows="10"></textarea>
+          <app-erro-campo [controle]="formulario.controls.descricao" />
+        </div>
+
+        <div class="grade-form">
+          <div class="campo">
+            <label for="urgencia">Urgência</label>
+            <select id="urgencia" formControlName="urgencia">
+              @for (urgencia of URGENCIAS; track urgencia) {
+                <option [value]="urgencia">{{ urgencia | rotuloUrgencia }}</option>
+              }
+            </select>
+          </div>
+          <div class="campo">
+            <label for="responsavel">Responsável</label>
+            <app-seletor-responsavel
+              [controle]="formulario.controls.responsavelId"
+              [usuarios]="usuarios()"
+              [eu]="usuarioLogado()"
+              [atual]="c.responsavel"
+            />
+          </div>
+        </div>
+
+        @if (!projetoArquivado()) {
+          <div class="acoes">
+            <button type="submit" class="btn btn-primario" [disabled]="salvando() || formulario.pristine">
+              {{ salvando() ? 'Salvando…' : 'Salvar alterações' }}
+            </button>
+            @if (formulario.dirty) {
+              <button type="button" class="btn btn-fantasma" (click)="descartar()">Descartar</button>
+            }
+          </div>
+        }
+      </form>
+    </div>
+
+    <aside class="lateral">
+      <section class="cartao info">
+        <dl>
+          <dt class="rotulo">Projeto</dt>
+          <dd>{{ c.projeto.nome }}</dd>
+          <dt class="rotulo">Posição na fila</dt>
+          <dd>
+            #{{ c.posicao }}
+            <a [routerLink]="['/fila']" [queryParams]="{ projetoId: c.projeto.id }">reordenar</a>
+          </dd>
+          <dt class="rotulo">Criado por</dt>
+          <dd>{{ c.criadoPor.nome }}</dd>
+          <dt class="rotulo">Criado em</dt>
+          <dd>{{ c.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          <dt class="rotulo">Atualizado em</dt>
+          <dd>{{ c.atualizadoEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </dl>
+      </section>
+
+      <section class="cartao">
+        <app-historico-chamado [chamadoId]="c.id" [versao]="c.versao" />
+      </section>
+    </aside>
+  </div>
+} @else if (carregamento.carregando()) {
+  <p class="vazio">Carregando chamado…</p>
+}

@@ -1,0 +1,71 @@
+<header class="cabecalho-pagina">
+  <h1>Novo chamado</h1>
+  <a class="btn btn-fantasma" routerLink="/chamados">Cancelar</a>
+</header>
+
+<form class="cartao" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+  <div class="grade-form">
+    <div class="campo">
+      <label for="projeto">Projeto</label>
+      <select id="projeto" formControlName="projetoId">
+        <option value="" disabled>Selecione…</option>
+        @for (projeto of projetos(); track projeto.id) {
+          <option [value]="String(projeto.id)">{{ projeto.nome }}</option>
+        }
+      </select>
+      <app-erro-campo [controle]="formulario.controls.projetoId" />
+    </div>
+
+    <div class="campo">
+      <label for="responsavel">Responsável</label>
+      <app-seletor-responsavel
+        [controle]="formulario.controls.responsavelId"
+        [usuarios]="usuarios()"
+        [eu]="usuarioLogado()"
+      />
+    </div>
+  </div>
+
+  <div class="campo">
+    <label for="titulo">Título</label>
+    <input id="titulo" type="text" formControlName="titulo" maxlength="200" />
+    <app-erro-campo [controle]="formulario.controls.titulo" />
+  </div>
+
+  <div class="campo">
+    <label for="descricao">Descrição</label>
+    <textarea id="descricao" formControlName="descricao" rows="8"></textarea>
+    <app-erro-campo [controle]="formulario.controls.descricao" />
+  </div>
+
+  <fieldset class="campo">
+    <legend class="rotulo">Urgência</legend>
+    <div class="opcoes">
+      @for (urgencia of URGENCIAS; track urgencia) {
+        <label class="opcao">
+          <input type="radio" formControlName="urgencia" [value]="urgencia" />
+          {{ urgencia | rotuloUrgencia }}
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <div class="campo">
+    <label for="posicao">Posição na fila do projeto</label>
+    <select id="posicao" formControlName="posicao">
+      <option value="">Fim da fila (posição {{ fimDaFila() }})</option>
+      @for (item of fila(); track item.id) {
+        <option [value]="String(item.posicao)">Posição {{ item.posicao }} — antes de "{{ item.titulo }}"</option>
+      }
+    </select>
+    <span class="dica">
+      A lista geral ordena por urgência; a posição define a ordem entre chamados do mesmo projeto.
+    </span>
+  </div>
+
+  <div class="acoes">
+    <button type="submit" class="btn btn-primario" [disabled]="salvando()">
+      {{ salvando() ? 'Salvando…' : 'Criar chamado' }}
+    </button>
+  </div>
+</form>

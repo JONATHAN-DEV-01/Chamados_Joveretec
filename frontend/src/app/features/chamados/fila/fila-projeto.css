@@ -1,0 +1,83 @@
+.topo {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: var(--espaco);
+  align-items: end;
+  margin-bottom: var(--espaco);
+}
+
+.topo .dica {
+  margin: 0;
+}
+
+.fila {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-painel);
+}
+
+.alca {
+  color: var(--cor-texto-suave);
+  font-size: 1.2rem;
+  cursor: grab;
+  user-select: none;
+}
+
+.posicao {
+  min-width: 28px;
+  color: var(--cor-texto-suave);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.conteudo a {
+  color: var(--cor-texto);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+
+.setas {
+  display: flex;
+  gap: 4px;
+}
+
+[aria-busy='true'] {
+  opacity: 0.7;
+}
+
+@media (max-width: 640px) {
+  .topo {
+    grid-template-columns: 1fr;
+  }
+
+  .item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .posicao {
+    display: none;
+  }
+}
