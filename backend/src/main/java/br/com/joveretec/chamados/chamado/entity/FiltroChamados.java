@@ -10,10 +10,6 @@ public record FiltroChamados(
         Set<Urgencia> urgencias,
         String busca) {
 
-    public static FiltroChamados vazio() {
-        return new FiltroChamados(null, null, false, Set.of(), Set.of(), null);
-    }
-
     public static FiltroChamados doProjetoEResponsavel(Long projetoId, Long responsavelId) {
         return new FiltroChamados(projetoId, responsavelId, false, Set.of(), Set.of(), null);
     }
