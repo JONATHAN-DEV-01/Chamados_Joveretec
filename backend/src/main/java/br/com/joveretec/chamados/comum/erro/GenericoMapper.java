@@ -1,6 +1,8 @@
 package br.com.joveretec.chamados.comum.erro;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -9,12 +11,18 @@ import jakarta.ws.rs.ext.Provider;
 import org.hibernate.StaleStateException;
 import org.jboss.logging.Logger;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
 /** Mapeadores para erros de infraestrutura (HTTP, JSON, concorrência e falhas inesperadas). */
 public final class GenericoMapper {
 
     private static final Logger LOG = Logger.getLogger(GenericoMapper.class);
     private static final String MENSAGEM_CONCORRENCIA =
             "O registro foi alterado por outra pessoa. Recarregue e tente novamente.";
+    private static final String MENSAGEM_JSON_INVALIDO =
+            "Corpo da requisição inválido: verifique o JSON e os valores enviados.";
 
     private GenericoMapper() {
     }
@@ -50,8 +58,23 @@ public final class GenericoMapper {
         }
 
         static Response resposta() {
-            return RespostaErro.resposta(CodigoErro.VALIDACAO,
-                    "Corpo da requisição inválido: verifique o JSON e os valores enviados.");
+            return RespostaErro.resposta(CodigoErro.VALIDACAO, MENSAGEM_JSON_INVALIDO);
+        }
+    }
+
+    /** Valor com tipo errado em um campo (ex.: urgência inexistente); informa qual campo falhou. */
+    @Provider
+    public static class ValorInvalido implements ExceptionMapper<MismatchedInputException> {
+        @Override
+        public Response toResponse(MismatchedInputException excecao) {
+            String campo = excecao.getPath().stream()
+                    .map(JsonMappingException.Reference::getFieldName)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.joining("."));
+            List<RespostaErro.Detalhe> detalhes = campo.isEmpty()
+                    ? List.of()
+                    : List.of(new RespostaErro.Detalhe(campo, "Valor inválido para este campo."));
+            return RespostaErro.resposta(CodigoErro.VALIDACAO, MENSAGEM_JSON_INVALIDO, detalhes);
         }
     }
 
