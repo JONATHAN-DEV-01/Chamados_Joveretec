@@ -1,0 +1,120 @@
+.colunas {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  gap: var(--espaco);
+  align-items: start;
+}
+
+.coluna {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaco);
+  min-width: 0;
+}
+
+.coluna > h2 {
+  margin: 0;
+}
+
+.cores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--espaco);
+}
+
+.seletor-cor {
+  display: flex;
+  gap: 8px;
+}
+
+.seletor-cor input[type='color'] {
+  flex: 0 0 44px;
+  width: 44px;
+  padding: 2px;
+  cursor: pointer;
+}
+
+.seletor-cor input[type='text'] {
+  font-family: ui-monospace, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+.alerta {
+  margin: var(--espaco) 0 0;
+}
+
+/* Pré-visualização: usa as cores do formulário via variáveis locais (.tema-local). */
+.previa {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+.previa-lateral {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 8px;
+  border-right: 1px solid var(--cor-borda);
+  font-size: 0.8rem;
+}
+
+.previa-item {
+  padding: 4px 6px;
+  border-left: 3px solid transparent;
+  border-radius: 4px;
+  color: var(--cor-texto-suave);
+}
+
+.previa-item.ativo {
+  border-left-color: var(--cor-destaque);
+  background: var(--cor-painel);
+  color: var(--cor-texto);
+}
+
+.previa-conteudo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+}
+
+.previa-cartao {
+  padding: 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-painel);
+}
+
+.previa-titulo {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.previa-texto {
+  margin: 0 0 10px;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.previa-texto a {
+  color: var(--cor-destaque);
+}
+
+.previa-selos,
+.previa-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 900px) {
+  .colunas {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

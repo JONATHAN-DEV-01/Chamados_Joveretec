@@ -1,0 +1,110 @@
+<header class="cabecalho-pagina">
+  <h1>Usuários</h1>
+</header>
+
+<form class="cartao formulario-admin" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+  <h2>{{ emEdicao() ? 'Editar "' + emEdicao()!.nome + '"' : 'Novo usuário' }}</h2>
+  <div class="grade-form">
+    <div class="campo">
+      <label for="nome">Nome</label>
+      <input id="nome" type="text" formControlName="nome" maxlength="120" />
+      <app-erro-campo [controle]="formulario.controls.nome" />
+    </div>
+    <div class="campo">
+      <label for="email">E-mail</label>
+      <input id="email" type="email" formControlName="email" autocomplete="off" />
+      <app-erro-campo [controle]="formulario.controls.email" />
+    </div>
+    <div class="campo">
+      <label for="perfil">Perfil</label>
+      <select id="perfil" formControlName="perfil">
+        @for (perfil of PERFIS; track perfil) {
+          <option [value]="perfil">{{ perfil | rotuloPerfil }}</option>
+        }
+      </select>
+    </div>
+    <div class="campo">
+      <label for="senha">{{ emEdicao() ? 'Nova senha (opcional)' : 'Senha inicial' }}</label>
+      <input id="senha" type="password" formControlName="senha" autocomplete="new-password" />
+      <span class="dica">Entre 8 e 72 caracteres.</span>
+      <app-erro-campo [controle]="formulario.controls.senha" />
+    </div>
+  </div>
+  <div class="acoes">
+    <button type="submit" class="btn btn-primario" [disabled]="salvando()">
+      {{ emEdicao() ? 'Salvar alterações' : 'Criar usuário' }}
+    </button>
+    @if (emEdicao()) {
+      <button type="button" class="btn btn-fantasma" (click)="novo()">Cancelar</button>
+    }
+  </div>
+</form>
+
+<div class="barra-filtros">
+  <div class="campo">
+    <label for="busca">Buscar</label>
+    <input id="busca" type="search" placeholder="Nome ou e-mail" [formControl]="campoBusca" />
+  </div>
+  <div class="campo">
+    <label for="filtro-perfil">Perfil</label>
+    <select id="filtro-perfil" [formControl]="campoPerfil">
+      <option value="">Todos</option>
+      @for (perfil of PERFIS; track perfil) {
+        <option [value]="perfil">{{ perfil | rotuloPerfil }}</option>
+      }
+    </select>
+  </div>
+  <div class="campo">
+    <label for="filtro-ativo">Situação</label>
+    <select id="filtro-ativo" [formControl]="campoAtivo">
+      <option value="true">Ativos</option>
+      <option value="false">Desativados</option>
+      <option value="">Todos</option>
+    </select>
+  </div>
+</div>
+
+@if (lista.erro(); as erro) {
+  <p class="alerta" role="alert">{{ erro }}</p>
+}
+
+@if (lista.dados(); as resultado) {
+  <div class="tabela-container" [attr.aria-busy]="lista.carregando()">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col">Nome</th>
+          <th scope="col">E-mail</th>
+          <th scope="col">Perfil</th>
+          <th scope="col">Situação</th>
+          <th scope="col"><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (usuario of resultado.itens; track usuario.id) {
+          <tr [class.inativo]="!usuario.ativo">
+            <td>{{ usuario.nome }}{{ usuario.id === usuarioLogado()?.id ? ' (você)' : '' }}</td>
+            <td>{{ usuario.email }}</td>
+            <td>{{ usuario.perfil | rotuloPerfil }}</td>
+            <td>{{ usuario.ativo ? 'Ativo' : 'Desativado' }}</td>
+            <td>
+              <div class="acoes fim">
+                <button type="button" class="btn btn-pequeno" (click)="editar(usuario)">Editar</button>
+                @if (usuario.id !== usuarioLogado()?.id) {
+                  @if (usuario.ativo) {
+                    <app-botao-confirmar texto="Desativar" textoConfirmacao="Confirmar desativação" (confirmado)="desativar(usuario)" />
+                  } @else {
+                    <button type="button" class="btn btn-pequeno" (click)="reativar(usuario)">Reativar</button>
+                  }
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="vazio">Nenhum usuário encontrado.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-paginacao [pagina]="resultado" (mudar)="pagina.set($event)" />
+}

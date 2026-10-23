@@ -10,11 +10,6 @@
   --cor-texto: #ededed;
   --cor-sobre-destaque: #ffffff;
 
-  --cor-painel: color-mix(in srgb, var(--cor-superficie) 35%, var(--cor-fundo));
-  --cor-painel-forte: color-mix(in srgb, var(--cor-superficie) 60%, var(--cor-fundo));
-  --cor-borda: color-mix(in srgb, var(--cor-superficie) 85%, var(--cor-fundo));
-  --cor-texto-suave: color-mix(in srgb, var(--cor-texto) 65%, var(--cor-fundo));
-  --cor-destaque-suave: color-mix(in srgb, var(--cor-destaque) 18%, var(--cor-fundo));
   --cor-sucesso: #199e70;
   --cor-alerta: #c98500;
 
@@ -29,6 +24,19 @@
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
   color-scheme: dark;
+}
+
+/*
+ * Cores derivadas: declaradas também em .tema-local para que um trecho da página
+ * (a pré-visualização da paleta) possa usar outras cores base sem afetar o resto.
+ */
+:root,
+.tema-local {
+  --cor-painel: color-mix(in srgb, var(--cor-superficie) 35%, var(--cor-fundo));
+  --cor-painel-forte: color-mix(in srgb, var(--cor-superficie) 60%, var(--cor-fundo));
+  --cor-borda: color-mix(in srgb, var(--cor-superficie) 85%, var(--cor-fundo));
+  --cor-texto-suave: color-mix(in srgb, var(--cor-texto) 65%, var(--cor-fundo));
+  --cor-destaque-suave: color-mix(in srgb, var(--cor-destaque) 18%, var(--cor-fundo));
 }
 
 *,
@@ -325,4 +333,48 @@ table.tabela {
 .cdk-drag-animating,
 .cdk-drop-list-dragging .cdk-drag:not(.cdk-drag-placeholder) {
   transition: transform 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* ---------- Telas de administração ---------- */
+.formulario-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: var(--espaco);
+}
+
+.formulario-admin h2 {
+  margin: 0;
+}
+
+.barra-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 18px;
+  margin-bottom: 12px;
+}
+
+.barra-filtros .campo {
+  min-width: 200px;
+}
+
+.alternador {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  cursor: pointer;
+}
+
+.alternador input {
+  accent-color: var(--cor-destaque);
+}
+
+.acoes.fim {
+  justify-content: flex-end;
+}
+
+tr.inativo td {
+  color: var(--cor-texto-suave);
 }

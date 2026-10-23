@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { autenticadoGuard, visitanteGuard } from './core/auth/guards';
+import { adminGuard, autenticadoGuard, visitanteGuard } from './core/auth/guards';
 
 export const routes: Routes = [
   {
@@ -38,6 +38,29 @@ export const routes: Routes = [
         path: 'fila',
         title: 'Fila do projeto',
         loadComponent: () => import('./features/chamados/fila/fila-projeto').then((m) => m.FilaProjeto),
+      },
+      {
+        path: 'admin',
+        canActivate: [adminGuard],
+        children: [
+          { path: '', pathMatch: 'full', redirectTo: 'projetos' },
+          {
+            path: 'projetos',
+            title: 'Projetos',
+            loadComponent: () => import('./features/admin/projetos/admin-projetos').then((m) => m.AdminProjetos),
+          },
+          {
+            path: 'usuarios',
+            title: 'Usuários',
+            loadComponent: () => import('./features/admin/usuarios/admin-usuarios').then((m) => m.AdminUsuarios),
+          },
+          {
+            path: 'configuracoes',
+            title: 'Configurações',
+            loadComponent: () =>
+              import('./features/admin/configuracoes/admin-configuracoes').then((m) => m.AdminConfiguracoes),
+          },
+        ],
       },
       {
         path: 'conta',

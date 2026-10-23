@@ -1,0 +1,81 @@
+<header class="cabecalho-pagina">
+  <h1>Projetos</h1>
+</header>
+
+<form class="cartao formulario-admin" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+  <h2>{{ emEdicao() ? 'Editar "' + emEdicao()!.nome + '"' : 'Novo projeto' }}</h2>
+  <div class="grade-form">
+    <div class="campo">
+      <label for="nome">Nome</label>
+      <input id="nome" type="text" formControlName="nome" maxlength="120" />
+      <app-erro-campo [controle]="formulario.controls.nome" />
+    </div>
+    <div class="campo">
+      <label for="descricao">Descrição (opcional)</label>
+      <input id="descricao" type="text" formControlName="descricao" />
+      <app-erro-campo [controle]="formulario.controls.descricao" />
+    </div>
+  </div>
+  <div class="acoes">
+    <button type="submit" class="btn btn-primario" [disabled]="salvando()">
+      {{ emEdicao() ? 'Salvar alterações' : 'Criar projeto' }}
+    </button>
+    @if (emEdicao()) {
+      <button type="button" class="btn btn-fantasma" (click)="cancelarEdicao()">Cancelar</button>
+    }
+  </div>
+</form>
+
+<div class="barra-filtros">
+  <div class="campo">
+    <label for="busca">Buscar</label>
+    <input id="busca" type="search" placeholder="Nome do projeto" [formControl]="campoBusca" />
+  </div>
+  <label class="alternador">
+    <input type="checkbox" [checked]="incluirArquivados()" (change)="alternarArquivados($event)" />
+    Mostrar arquivados
+  </label>
+</div>
+
+@if (lista.erro(); as erro) {
+  <p class="alerta" role="alert">{{ erro }}</p>
+}
+
+@if (lista.dados(); as resultado) {
+  <div class="tabela-container" [attr.aria-busy]="lista.carregando()">
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col">Nome</th>
+          <th scope="col">Descrição</th>
+          <th scope="col">Situação</th>
+          <th scope="col">Criado em</th>
+          <th scope="col"><span class="sr-only">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (projeto of resultado.itens; track projeto.id) {
+          <tr [class.inativo]="projeto.arquivado">
+            <td>{{ projeto.nome }}</td>
+            <td class="texto-suave">{{ projeto.descricao || '—' }}</td>
+            <td>{{ projeto.arquivado ? 'Arquivado' : 'Ativo' }}</td>
+            <td class="texto-suave">{{ projeto.criadoEm | date: 'dd/MM/yyyy' }}</td>
+            <td>
+              <div class="acoes fim">
+                <button type="button" class="btn btn-pequeno" (click)="editar(projeto)">Editar</button>
+                @if (projeto.arquivado) {
+                  <button type="button" class="btn btn-pequeno" (click)="desarquivar(projeto)">Desarquivar</button>
+                } @else {
+                  <app-botao-confirmar texto="Arquivar" textoConfirmacao="Confirmar arquivamento" (confirmado)="arquivar(projeto)" />
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="vazio">Nenhum projeto encontrado.</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-paginacao [pagina]="resultado" (mudar)="pagina.set($event)" />
+}

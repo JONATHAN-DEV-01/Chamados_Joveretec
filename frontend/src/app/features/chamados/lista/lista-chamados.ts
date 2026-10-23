@@ -11,13 +11,12 @@ import { UsuarioService } from '../../../core/api/usuario.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ChamadoResumo, STATUS, StatusChamado, URGENCIAS, Urgencia } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
+import { ATRASO_BUSCA_MS } from '../../../shared/busca-com-atraso';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
 import { Paginacao } from '../../../shared/componentes/paginacao';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
 import { ParametrosLista, SEM_RESPONSAVEL, alternar, lerLista, paginaDa, paraFiltro } from './filtro-url';
-
-const ATRASO_BUSCA_MS = 350;
 
 @Component({
   selector: 'app-lista-chamados',
