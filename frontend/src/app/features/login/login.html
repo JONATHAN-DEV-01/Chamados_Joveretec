@@ -1,0 +1,34 @@
+<main class="pagina">
+  <section class="cartao caixa" aria-labelledby="titulo-login">
+    <p class="marca">{{ configuracao().geral.nomeSistema }}</p>
+    <h1 id="titulo-login">Entrar</h1>
+
+    @if (sessao() === 'expirada') {
+      <p class="alerta alerta-info">Sua sessão expirou. Entre novamente para continuar.</p>
+    }
+    @if (erro(); as mensagem) {
+      <p class="alerta" role="alert">{{ mensagem }}</p>
+    }
+
+    <form [formGroup]="formulario" (ngSubmit)="entrar()" novalidate>
+      <div class="campo">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" formControlName="email" autocomplete="username" autofocus />
+        <app-erro-campo [controle]="formulario.controls.email" />
+      </div>
+
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" formControlName="senha" autocomplete="current-password" />
+        <app-erro-campo [controle]="formulario.controls.senha" />
+      </div>
+
+      <button type="submit" class="btn btn-primario" [disabled]="enviando()">
+        {{ enviando() ? 'Entrando…' : 'Entrar' }}
+      </button>
+      @if (enviando()) {
+        <p class="dica">O primeiro acesso do dia pode levar alguns segundos enquanto o servidor acorda.</p>
+      }
+    </form>
+  </section>
+</main>

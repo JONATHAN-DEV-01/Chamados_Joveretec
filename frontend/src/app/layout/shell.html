@@ -14,6 +14,17 @@
       }
     </ul>
   </nav>
+
+  @if (auth.isAdmin()) {
+    <nav aria-labelledby="titulo-admin">
+      <p id="titulo-admin" class="rotulo secao">Administração</p>
+      <ul>
+        @for (item of menuAdmin; track item.rota) {
+          <li><a [routerLink]="item.rota" routerLinkActive="ativo">{{ item.rotulo }}</a></li>
+        }
+      </ul>
+    </nav>
+  }
 </aside>
 
 <div class="principal">
@@ -28,7 +39,15 @@
       <span aria-hidden="true">☰</span>
       <span class="sr-only">Abrir menu</span>
     </button>
-    <div class="topo-direita"></div>
+    <div class="topo-direita">
+      @if (auth.usuario(); as usuario) {
+        <a class="usuario" routerLink="/conta" title="Minha conta">
+          <span class="nome">{{ usuario.nome }}</span>
+          <span class="perfil">{{ usuario.perfil | rotuloPerfil }}</span>
+        </a>
+      }
+      <button type="button" class="btn btn-pequeno" (click)="sair()">Sair</button>
+    </div>
   </header>
 
   <main id="conteudo" class="conteudo">

@@ -3,6 +3,8 @@ import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } fro
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { ConfiguracaoService } from '../core/api/configuracao.service';
+import { AuthService } from '../core/auth/auth.service';
+import { RotuloPerfilPipe } from '../shared/rotulos';
 
 interface ItemMenu {
   rota: string;
@@ -12,12 +14,14 @@ interface ItemMenu {
 /** Estrutura das telas autenticadas: barra lateral, cabeçalho e conteúdo. */
 @Component({
   selector: 'app-shell',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, RotuloPerfilPipe],
   templateUrl: './shell.html',
   styleUrl: './shell.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Shell {
+  private readonly router = inject(Router);
+  protected readonly auth = inject(AuthService);
   protected readonly configuracao = inject(ConfiguracaoService).atual;
   protected readonly menuAberto = signal(false);
 
@@ -28,9 +32,16 @@ export class Shell {
     { rota: '/fila', rotulo: 'Fila do projeto' },
   ];
 
+  /** Visível só para ADMIN (as rotas também têm guard e o backend valida o perfil). */
+  protected readonly menuAdmin: ItemMenu[] = [
+    { rota: '/admin/projetos', rotulo: 'Projetos' },
+    { rota: '/admin/usuarios', rotulo: 'Usuários' },
+    { rota: '/admin/configuracoes', rotulo: 'Configurações' },
+  ];
+
   constructor() {
-    inject(Router)
-      .events.pipe(
+    this.router.events
+      .pipe(
         filter((evento) => evento instanceof NavigationEnd),
         takeUntilDestroyed(),
       )
@@ -39,5 +50,10 @@ export class Shell {
 
   protected alternarMenu(): void {
     this.menuAberto.update((aberto) => !aberto);
+  }
+
+  protected sair(): void {
+    this.auth.encerrar();
+    void this.router.navigate(['/login']);
   }
 }

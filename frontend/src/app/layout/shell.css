@@ -96,6 +96,23 @@ nav a.ativo {
   margin-left: auto;
 }
 
+.usuario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--cor-texto);
+  line-height: 1.2;
+}
+
+.usuario:hover {
+  text-decoration: none;
+}
+
+.usuario .perfil {
+  color: var(--cor-texto-suave);
+  font-size: 0.75rem;
+}
+
 .botao-menu {
   display: none;
   font-size: 1.2rem;

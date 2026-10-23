@@ -1,0 +1,32 @@
+.pagina {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--espaco);
+}
+
+.caixa {
+  width: min(400px, 100%);
+  padding: 32px 28px;
+}
+
+.marca {
+  margin: 0 0 8px;
+  color: var(--cor-destaque);
+  font-weight: 700;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.alerta {
+  margin: 0 0 12px;
+}
+
+button[type='submit'] {
+  margin-top: 6px;
+}
