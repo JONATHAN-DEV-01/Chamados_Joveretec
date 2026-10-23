@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin } from 'rxjs';
 import { MeusChamados, TotalPorDesenvolvedor, TotalPorStatus, TotalPorUrgencia } from '../models/dashboard';
+import { UltimaAtualizacao } from '../models/feed';
 import { parametros, urlApi } from './parametros';
 
 export interface Indicadores {
@@ -10,6 +11,8 @@ export interface Indicadores {
   porUrgencia: TotalPorUrgencia[];
   porDesenvolvedor: TotalPorDesenvolvedor[];
 }
+
+const LIMITE_ULTIMAS = 8;
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
@@ -25,5 +28,10 @@ export class DashboardService {
       porUrgencia: this.http.get<TotalPorUrgencia[]>(`${this.url}/por-urgencia`, { params }),
       porDesenvolvedor: this.http.get<TotalPorDesenvolvedor[]>(`${this.url}/por-desenvolvedor`, { params }),
     });
+  }
+
+  /** Acompanhamentos mais recentes nos chamados em que o usuário é responsável ou autor. */
+  ultimasAtualizacoes(limite = LIMITE_ULTIMAS): Observable<UltimaAtualizacao[]> {
+    return this.http.get<UltimaAtualizacao[]>(`${this.url}/ultimas-atualizacoes`, { params: parametros({ limite }) });
   }
 }

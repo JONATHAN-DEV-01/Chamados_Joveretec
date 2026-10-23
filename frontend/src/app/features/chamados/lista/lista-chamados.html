@@ -93,7 +93,7 @@
           <th scope="col">Responsável</th>
           <th scope="col">Status</th>
           <th scope="col" title="Posição na fila do projeto">Fila</th>
-          <th scope="col">Atualizado</th>
+          <th scope="col" title="Inclui acompanhamentos e anexos">Última atividade</th>
           <th scope="col"><span class="sr-only">Ações</span></th>
         </tr>
       </thead>
@@ -112,7 +112,11 @@
             </td>
             <td><app-badge-status [status]="chamado.status" /></td>
             <td class="texto-suave">#{{ chamado.posicao }}</td>
-            <td class="texto-suave data">{{ chamado.atualizadoEm | date: 'dd/MM/yy HH:mm' }}</td>
+            <td class="texto-suave data">
+              <time [attr.datetime]="chamado.ultimaAtividadeEm" [title]="chamado.ultimaAtividadeEm | date: 'dd/MM/yyyy HH:mm'">
+                {{ chamado.ultimaAtividadeEm | tempoRelativo }}
+              </time>
+            </td>
             <td class="acao">
               @if (chamado.responsavel?.id !== usuarioLogado()?.id) {
                 <button type="button" class="btn btn-pequeno" (click)="atribuirAMim(chamado)">Atribuir a mim</button>

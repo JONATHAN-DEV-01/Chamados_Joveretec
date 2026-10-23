@@ -15,6 +15,7 @@ import { ATRASO_BUSCA_MS } from '../../../shared/busca-com-atraso';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
 import { Paginacao } from '../../../shared/componentes/paginacao';
+import { TempoRelativoPipe } from '../../../shared/formatos';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
 import { ParametrosLista, SEM_RESPONSAVEL, alternar, lerLista, paginaDa, paraFiltro } from './filtro-url';
 
@@ -29,6 +30,7 @@ import { ParametrosLista, SEM_RESPONSAVEL, alternar, lerLista, paginaDa, paraFil
     Paginacao,
     RotuloStatusPipe,
     RotuloUrgenciaPipe,
+    TempoRelativoPipe,
   ],
   templateUrl: './lista-chamados.html',
   styleUrl: './lista-chamados.css',
