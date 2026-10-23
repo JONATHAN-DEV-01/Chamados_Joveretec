@@ -15,7 +15,6 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
 
     private static final String DE_CHAMADO_COM_RELACOES =
             "from Chamado c join fetch c.projeto left join fetch c.responsavel ";
-    private static final String ORDENACAO_PADRAO = " order by c.urgenciaPeso desc, c.posicao, c.id";
 
     /** Busca o chamado já com projeto, responsável e autor carregados (uma única consulta). */
     public Optional<Chamado> buscarCompleto(Long id) {
@@ -23,9 +22,9 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
                 .firstResultOptional();
     }
 
-    public Pagina<Chamado> listar(FiltroChamados filtro, Paginacao paginacao) {
+    public Pagina<Chamado> listar(FiltroChamados filtro, OrdemChamados ordem, Paginacao paginacao) {
         CondicoesConsulta condicoes = condicoesDo(filtro);
-        List<Chamado> itens = find(DE_CHAMADO_COM_RELACOES + "where " + condicoes.where() + ORDENACAO_PADRAO,
+        List<Chamado> itens = find(DE_CHAMADO_COM_RELACOES + "where " + condicoes.where() + ordem.orderBy(),
                 condicoes.parametros())
                 .page(paginacao.pagina(), paginacao.tamanho())
                 .list();

@@ -242,10 +242,11 @@ class ChamadoResourceTest {
         return corpo;
     }
 
-    /** Ids do projeto em ordem de posição (todos os chamados de teste usam a mesma urgência). */
+    /** Ids do projeto em ordem de posição na fila. */
     private List<Long> idsNaFila() {
         List<Integer> ids = como(dev.token())
                 .queryParam("projetoId", projetoId)
+                .queryParam("ordem", "POSICAO")
                 .get("/api/chamados")
                 .then().statusCode(200)
                 .extract().path("itens.id");

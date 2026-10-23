@@ -55,6 +55,14 @@ class FiltrosChamadoTest {
     }
 
     @Test
+    void ordenaSomentePorPosicaoQuandoSolicitado() {
+        doProjeto().queryParam("ordem", "POSICAO").get("/api/chamados")
+                .then().statusCode(200)
+                .body("itens.titulo", contains("Login quebrado", "Relatório lento", "Ajustar layout",
+                        "Erro no login social", "Documentar API"));
+    }
+
+    @Test
     void filtraPorResponsavel() {
         doProjeto().queryParam("responsavelId", outroDev.id()).get("/api/chamados")
                 .then().body("itens.titulo", contains("Relatório lento", "Documentar API"));

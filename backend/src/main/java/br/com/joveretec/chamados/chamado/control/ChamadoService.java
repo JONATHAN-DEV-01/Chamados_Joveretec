@@ -5,6 +5,7 @@ import br.com.joveretec.chamados.chamado.entity.Chamado;
 import br.com.joveretec.chamados.chamado.entity.ChamadoRepository;
 import br.com.joveretec.chamados.chamado.entity.FiltroChamados;
 import br.com.joveretec.chamados.chamado.entity.HistoricoChamado;
+import br.com.joveretec.chamados.chamado.entity.OrdemChamados;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
 import br.com.joveretec.chamados.comum.erro.ExcecaoDeNegocio;
 import br.com.joveretec.chamados.comum.paginacao.Pagina;
@@ -35,8 +36,8 @@ public class ChamadoService {
         this.usuarios = usuarios;
     }
 
-    public Pagina<Chamado> listar(FiltroChamados filtro, Paginacao paginacao) {
-        return chamados.listar(filtro, paginacao);
+    public Pagina<Chamado> listar(FiltroChamados filtro, OrdemChamados ordem, Paginacao paginacao) {
+        return chamados.listar(filtro, ordem, paginacao);
     }
 
     public Chamado buscar(Long id) {

@@ -10,6 +10,7 @@ import br.com.joveretec.chamados.chamado.boundary.ChamadoDTOs.ReordenarRequest;
 import br.com.joveretec.chamados.chamado.control.ChamadoService;
 import br.com.joveretec.chamados.chamado.entity.Chamado;
 import br.com.joveretec.chamados.chamado.entity.FiltroChamados;
+import br.com.joveretec.chamados.chamado.entity.OrdemChamados;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
 import br.com.joveretec.chamados.chamado.entity.Urgencia;
 import br.com.joveretec.chamados.comum.paginacao.Pagina;
@@ -56,12 +57,14 @@ public class ChamadoResource {
                                            @QueryParam("status") List<String> status,
                                            @QueryParam("urgencia") List<String> urgencias,
                                            @QueryParam("busca") String busca,
+                                           @QueryParam("ordem") @DefaultValue("URGENCIA") String ordem,
                                            @Valid @BeanParam Paginacao paginacao) {
         FiltroChamados filtro = new FiltroChamados(projetoId, responsavelId, semResponsavel,
                 ParametrosEnum.conjunto(status, StatusChamado.class, "status"),
                 ParametrosEnum.conjunto(urgencias, Urgencia.class, "urgencia"),
                 busca);
-        return chamados.listar(filtro, paginacao).map(ChamadoResumoDTO::de);
+        return chamados.listar(filtro, ParametrosEnum.valor(ordem, OrdemChamados.class, "ordem"), paginacao)
+                .map(ChamadoResumoDTO::de);
     }
 
     @GET
