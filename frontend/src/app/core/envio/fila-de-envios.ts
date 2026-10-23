@@ -1,7 +1,8 @@
-import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, InjectionToken, computed, inject, signal } from '@angular/core';
 import { Observable } from 'rxjs';
 import { AnexoService } from '../api/anexo.service';
 import { DestinoDoEnvio, EnvioDeArquivo, FabricaDeTransporte } from './envio-de-arquivo';
+import { EnviosAtivos } from './envios-ativos';
 import { criarTransporte } from './transporte';
 
 /**
@@ -48,33 +49,15 @@ export class FilaDeEnvios {
   }
 }
 
-/**
- * Filas abertas na aplicação, para avisar antes de sair da página (troca de rota ou
- * fechar/recarregar a aba) enquanto houver envio em andamento.
- */
-@Injectable({ providedIn: 'root' })
-export class EnviosAtivos {
-  private readonly filas = signal<FilaDeEnvios[]>([]);
-  readonly emAndamento = computed(() => this.filas().some((fila) => fila.pendente()));
-
-  constructor() {
-    globalThis.addEventListener?.('beforeunload', (evento: BeforeUnloadEvent) => {
-      if (this.emAndamento()) {
-        evento.preventDefault();
-      }
-    });
-  }
-
-  /** Cria a fila do componente atual e a remove do registro quando ele for destruído. */
-  criarFila(anexos: AnexoService, destino: (() => Observable<DestinoDoEnvio>) | null, destroyRef: DestroyRef): FilaDeEnvios {
-    const fila = new FilaDeEnvios(anexos, destino);
-    this.filas.update((filas) => [...filas, fila]);
-    destroyRef.onDestroy(() => this.filas.update((filas) => filas.filter((f) => f !== fila)));
-    return fila;
-  }
-}
+/** Como os arquivos são enviados (substituível nos testes). */
+export const FABRICA_DE_TRANSPORTE = new InjectionToken<FabricaDeTransporte>('FABRICA_DE_TRANSPORTE', {
+  providedIn: 'root',
+  factory: () => criarTransporte,
+});
 
 /** Atalho para componentes: `fila = filaDeEnvios(() => destino$)`. Precisa de contexto de injeção. */
 export function filaDeEnvios(destino: (() => Observable<DestinoDoEnvio>) | null = null): FilaDeEnvios {
-  return inject(EnviosAtivos).criarFila(inject(AnexoService), destino, inject(DestroyRef));
+  const fila = new FilaDeEnvios(inject(AnexoService), destino, inject(FABRICA_DE_TRANSPORTE));
+  inject(DestroyRef).onDestroy(inject(EnviosAtivos).registrar(fila));
+  return fila;
 }

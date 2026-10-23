@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanDeactivateFn } from '@angular/router';
-import { EnviosAtivos } from './fila-de-envios';
+import { EnviosAtivos } from './envios-ativos';
 
 /** Pede confirmação antes de sair de uma tela com envio de arquivo em andamento. */
 export const enviosPendentesGuard: CanDeactivateFn<unknown> = () =>
