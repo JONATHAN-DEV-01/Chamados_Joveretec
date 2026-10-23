@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (build + testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      # Os testes sobem um PostgreSQL via Dev Services (Testcontainers); o Docker já existe no runner.
+      - name: Build e testes
+        run: ./mvnw -B verify
+
+      - name: Relatório de testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-backend
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+
+  backend-docker:
+    name: Backend (imagem Docker)
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build da imagem usada no Render
+        run: docker build -t chamados-backend:ci backend
+
+  frontend:
+    name: Frontend (testes + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Testes unitários
+        run: npm run test:ci
+
+      # Só valida que o build de produção compila; o deploy real é feito pela Vercel.
+      - name: Build de produção
+        run: npm run build:producao
+        env:
+          API_URL: https://api.exemplo.invalid

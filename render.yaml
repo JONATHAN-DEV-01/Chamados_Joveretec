@@ -1,0 +1,36 @@
+# Blueprint do Render (opcional): New → Blueprint → selecione este repositório.
+# Os valores marcados com `sync: false` são pedidos no painel e nunca ficam no Git.
+services:
+  - type: web
+    name: chamados-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /q/health/ready
+    envVars:
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_PRIVATE_KEY
+        sync: false
+      - key: JWT_PUBLIC_KEY
+        sync: false
+      - key: JWT_ISSUER
+        value: https://chamados.joveretec.com.br
+      - key: JWT_DURACAO_MINUTOS
+        value: '480'
+      - key: CORS_ORIGINS
+        sync: false
+      - key: ADMIN_NOME
+        value: Administrador
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_SENHA
+        sync: false
