@@ -7,7 +7,6 @@ import {
   ChamadoResumo,
   CriarChamadoRequest,
   FiltroChamados,
-  Historico,
   StatusChamado,
 } from '../models/chamado';
 import { Pagina, Paginacao } from '../models/comum';
@@ -46,9 +45,5 @@ export class ChamadoService {
 
   reordenar(id: number, posicao: number): Observable<Chamado> {
     return this.http.put<Chamado>(`${this.url}/${id}/posicao`, { posicao });
-  }
-
-  historico(id: number, paginacao: Paginacao = {}): Observable<Pagina<Historico>> {
-    return this.http.get<Pagina<Historico>>(`${this.url}/${id}/historico`, { params: parametros({ ...paginacao }) });
   }
 }

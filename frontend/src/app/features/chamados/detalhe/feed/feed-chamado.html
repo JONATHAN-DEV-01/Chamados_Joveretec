@@ -1,0 +1,73 @@
+<section class="feed" aria-labelledby="titulo-feed">
+  <h2 id="titulo-feed">Acompanhamentos</h2>
+
+  @if (erro(); as mensagem) {
+    <p class="alerta" role="alert">
+      {{ mensagem }}
+      <button type="button" class="btn btn-pequeno" (click)="recarregar()">Tentar novamente</button>
+    </p>
+  }
+
+  @if (temAnteriores()) {
+    <button type="button" class="btn btn-pequeno anteriores" [disabled]="carregando()" (click)="carregarAnteriores()">
+      Mostrar itens anteriores ({{ total() - itens().length }})
+    </button>
+  }
+
+  <ol class="linha-do-tempo" [attr.aria-busy]="carregando()">
+    @for (item of itens(); track chave(item)) {
+      @switch (item.tipo) {
+        @case ('ABERTURA') {
+          <li class="item">
+            <article class="card abertura">
+              <app-avatar [nome]="item.abertura.autor.nome" />
+              <div class="corpo">
+                <header class="cabecalho">
+                  <strong>{{ item.abertura.autor.nome }}</strong>
+                  <span class="selo-abertura">abriu o chamado</span>
+                  <time class="texto-suave" [attr.datetime]="item.data" [title]="item.data | date: 'dd/MM/yyyy HH:mm:ss'">
+                    {{ item.data | tempoRelativo }}
+                  </time>
+                </header>
+                <p class="descricao">{{ item.abertura.descricao }}</p>
+                <app-lista-anexos [anexos]="item.abertura.anexos" (removido)="aoMudarConteudo()" />
+              </div>
+            </article>
+          </li>
+        }
+        @case ('ACOMPANHAMENTO') {
+          <li class="item">
+            <app-card-acompanhamento
+              [chamadoId]="chamadoId()"
+              [acompanhamento]="item.acompanhamento"
+              (atualizado)="aoAtualizar($event)"
+              (excluido)="aoMudarConteudo()"
+              (anexoRemovido)="aoMudarConteudo()"
+            />
+          </li>
+        }
+        @case ('EVENTO') {
+          <li class="item evento">
+            <span class="marcador" aria-hidden="true"></span>
+            <p>
+              <strong>{{ item.evento.usuario.nome }}</strong> {{ descrever(item.evento) }}
+              <time class="texto-suave" [attr.datetime]="item.data" [title]="item.data | date: 'dd/MM/yyyy HH:mm:ss'">
+                · {{ item.data | tempoRelativo }}
+              </time>
+            </p>
+          </li>
+        }
+      }
+    } @empty {
+      @if (carregando()) {
+        <li class="texto-suave">Carregando…</li>
+      }
+    }
+  </ol>
+
+  @if (podeEscrever()) {
+    <app-novo-acompanhamento [chamadoId]="chamadoId()" [chamadoConcluido]="chamadoConcluido()" (publicado)="aoPublicar()" />
+  } @else {
+    <p class="alerta alerta-info">Projeto arquivado: não é possível adicionar acompanhamentos.</p>
+  }
+</section>

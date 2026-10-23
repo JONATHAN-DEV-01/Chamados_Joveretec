@@ -32,6 +32,7 @@ export function chamadoResumo(id: number, posicao: number, titulo = `Chamado ${i
     projeto: { id: 1, nome: 'Projeto' },
     responsavel: null,
     atualizadoEm: '2026-10-20T12:00:00Z',
+    ultimaAtividadeEm: '2026-10-20T12:00:00Z',
   };
 }
 
@@ -41,6 +42,7 @@ export function chamado(id = 10): Chamado {
     descricao: 'Descrição',
     criadoPor: { id: USUARIO_DEV.id, nome: USUARIO_DEV.nome },
     criadoEm: '2026-10-20T12:00:00Z',
+    tempoGastoTotalMinutos: 0,
     versao: 0,
   };
 }

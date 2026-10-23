@@ -1,0 +1,50 @@
+@let a = acompanhamento();
+<article class="card" [class.solucao]="a.tipo === 'SOLUCAO'">
+  <app-avatar [nome]="a.autor.nome" />
+  <div class="corpo">
+    <header class="cabecalho">
+      <strong>{{ a.autor.nome }}</strong>
+      @if (a.tipo === 'SOLUCAO') {
+        <span class="selo-solucao">Solução</span>
+      }
+      <time class="texto-suave" [attr.datetime]="a.criadoEm" [title]="a.criadoEm | date: 'dd/MM/yyyy HH:mm:ss'">
+        {{ a.criadoEm | tempoRelativo }}
+      </time>
+      @if (a.editadoEm) {
+        <span class="texto-suave editado" [title]="'Editado em ' + (a.editadoEm | date: 'dd/MM/yyyy HH:mm')">· editado</span>
+      }
+      @if (a.tempoGastoMinutos) {
+        <span class="tempo" title="Tempo gasto">⏱ {{ a.tempoGastoMinutos | duracao }}</span>
+      }
+      @if (a.podeAlterar && !editando()) {
+        <span class="acoes-card">
+          <button type="button" class="btn btn-fantasma btn-pequeno" (click)="editar()">Editar</button>
+          <app-botao-confirmar texto="Excluir" textoConfirmacao="Excluir com anexos?" (confirmado)="excluir()" />
+        </span>
+      }
+    </header>
+
+    @if (editando()) {
+      <form class="edicao" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
+        <div class="campo">
+          <label [for]="'edicao-' + a.id" class="sr-only">Texto</label>
+          <textarea [id]="'edicao-' + a.id" formControlName="texto" rows="5" (keydown)="atalho($event)"></textarea>
+          <app-erro-campo [controle]="formulario.controls.texto" />
+        </div>
+        <div class="acoes">
+          <select formControlName="tipo" aria-label="Tipo">
+            <option value="ACOMPANHAMENTO">Acompanhamento</option>
+            <option value="SOLUCAO">Solução</option>
+          </select>
+          <input type="number" min="0" formControlName="tempoGastoMinutos" placeholder="Minutos" aria-label="Tempo gasto em minutos" class="minutos" />
+          <button type="submit" class="btn btn-primario btn-pequeno" [disabled]="salvando()">Salvar</button>
+          <button type="button" class="btn btn-fantasma btn-pequeno" (click)="editando.set(false)">Cancelar</button>
+        </div>
+      </form>
+    } @else {
+      <div class="texto-markdown" [innerHTML]="a.texto | markdown"></div>
+    }
+
+    <app-lista-anexos [anexos]="a.anexos" (removido)="anexoRemovido.emit($event)" />
+  </div>
+</article>

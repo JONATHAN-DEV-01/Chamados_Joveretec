@@ -1,0 +1,44 @@
+<form class="cartao compositor" [formGroup]="formulario" (ngSubmit)="publicar()" novalidate aria-labelledby="titulo-novo">
+  <h3 id="titulo-novo">Novo acompanhamento</h3>
+  <div class="campo">
+    <label for="novo-texto" class="sr-only">Texto do acompanhamento</label>
+    <textarea
+      id="novo-texto"
+      formControlName="texto"
+      rows="4"
+      placeholder="Descreva o andamento… (Markdown: **negrito**, *itálico*, `código`, listas com -)"
+      (keydown)="atalho($event)"
+    ></textarea>
+    <app-erro-campo [controle]="formulario.controls.texto" />
+  </div>
+
+  <div class="opcoes-compositor">
+    <div class="segmentado" role="radiogroup" aria-label="Tipo">
+      <label class="chip" [attr.aria-pressed]="formulario.controls.tipo.value === 'ACOMPANHAMENTO'">
+        <input type="radio" formControlName="tipo" value="ACOMPANHAMENTO" class="sr-only" />Acompanhamento
+      </label>
+      <label class="chip" [attr.aria-pressed]="formulario.controls.tipo.value === 'SOLUCAO'">
+        <input type="radio" formControlName="tipo" value="SOLUCAO" class="sr-only" />Solução
+      </label>
+    </div>
+
+    <label class="tempo-gasto">
+      <span class="rotulo">Tempo gasto</span>
+      <input type="number" min="0" formControlName="tempoGastoMinutos" placeholder="min" class="minutos" />
+    </label>
+
+    @if (ofereceConcluir()) {
+      <label class="alternador">
+        <input type="checkbox" formControlName="concluirChamado" />
+        Concluir o chamado
+      </label>
+    }
+
+    <span class="espaco"></span>
+    <span class="dica atalho">Ctrl+Enter para publicar</span>
+    <button type="submit" class="btn btn-primario" [disabled]="publicando()">
+      {{ publicando() ? 'Publicando…' : 'Publicar' }}
+    </button>
+  </div>
+  <app-erro-campo [controle]="formulario.controls.tempoGastoMinutos" />
+</form>

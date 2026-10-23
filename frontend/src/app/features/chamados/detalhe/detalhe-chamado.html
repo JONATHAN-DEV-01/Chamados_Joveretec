@@ -11,6 +11,9 @@
       <div class="selos">
         <app-badge-urgencia [urgencia]="c.urgencia" />
         <app-badge-status [status]="c.status" />
+        <span class="tempo-total" title="Tempo gasto somado nos acompanhamentos">
+          ⏱ {{ c.tempoGastoTotalMinutos | duracao }} gastos
+        </span>
       </div>
     </div>
     @if (c.responsavel?.id !== usuarioLogado()?.id && !projetoArquivado()) {
@@ -92,6 +95,14 @@
           </div>
         }
       </form>
+
+      <app-feed-chamado
+        [chamadoId]="c.id"
+        [versao]="c.versao"
+        [podeEscrever]="!projetoArquivado()"
+        [chamadoConcluido]="c.status === 'CONCLUIDO'"
+        (alterado)="aoAlterarNoFeed()"
+      />
     </div>
 
     <aside class="lateral">
@@ -108,14 +119,11 @@
           <dd>{{ c.criadoPor.nome }}</dd>
           <dt class="rotulo">Criado em</dt>
           <dd>{{ c.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
-          <dt class="rotulo">Atualizado em</dt>
-          <dd>{{ c.atualizadoEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          <dt class="rotulo">Última atividade</dt>
+          <dd>{{ c.ultimaAtividadeEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
         </dl>
       </section>
 
-      <section class="cartao">
-        <app-historico-chamado [chamadoId]="c.id" [versao]="c.versao" />
-      </section>
     </aside>
   </div>
 } @else if (carregamento.carregando()) {

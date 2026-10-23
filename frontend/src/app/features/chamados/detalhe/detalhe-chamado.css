@@ -11,7 +11,15 @@ h1 {
 
 .selos {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+}
+
+.tempo-total {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .colunas {

@@ -15,9 +15,10 @@ import { carregarComParametros, listaDeApoio } from '../../../shared/carregament
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
+import { DuracaoPipe } from '../../../shared/formatos';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
 import { SeletorResponsavel } from '../seletor-responsavel';
-import { HistoricoChamado } from './historico-chamado';
+import { FeedChamado } from './feed/feed-chamado';
 
 @Component({
   selector: 'app-detalhe-chamado',
@@ -31,7 +32,8 @@ import { HistoricoChamado } from './historico-chamado';
     RotuloStatusPipe,
     RotuloUrgenciaPipe,
     SeletorResponsavel,
-    HistoricoChamado,
+    FeedChamado,
+    DuracaoPipe,
   ],
   templateUrl: './detalhe-chamado.html',
   styleUrl: './detalhe-chamado.css',
@@ -124,6 +126,11 @@ export class DetalheChamado {
   protected recarregar(): void {
     this.conflito.set(false);
     this.formulario.markAsPristine();
+    this.carregamento.recarregar();
+  }
+
+  /** O feed alterou o chamado (ex.: Solução concluiu, tempo gasto mudou): traz a versão atual. */
+  protected aoAlterarNoFeed(): void {
     this.carregamento.recarregar();
   }
 

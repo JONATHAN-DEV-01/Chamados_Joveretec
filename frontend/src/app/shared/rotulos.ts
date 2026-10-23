@@ -28,6 +28,8 @@ export const ROTULO_CAMPO_HISTORICO: Record<CampoHistorico, string> = {
   STATUS: 'Status',
   RESPONSAVEL: 'Responsável',
   POSICAO: 'Posição na fila',
+  ANEXO_ADICIONADO: 'Anexo adicionado',
+  ANEXO_REMOVIDO: 'Anexo removido',
 };
 
 @Pipe({ name: 'rotuloUrgencia' })

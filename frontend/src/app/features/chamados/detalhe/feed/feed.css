@@ -1,0 +1,246 @@
+/* Estilos compartilhados pelo feed, cards e caixa de novo acompanhamento. */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed h2 {
+  margin: 0;
+}
+
+.anteriores {
+  align-self: center;
+}
+
+.linha-do-tempo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Linha vertical ligando os avatares. */
+.linha-do-tempo::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 16px;
+  width: 2px;
+  background: var(--cor-borda);
+  content: '';
+}
+
+.item {
+  position: relative;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.card .corpo {
+  min-width: 0;
+  padding: 10px 14px 12px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-painel);
+}
+
+.card.solucao .corpo {
+  border-color: var(--cor-destaque);
+  box-shadow: inset 3px 0 0 var(--cor-destaque);
+}
+
+.cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+
+.selo-solucao {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.selo-abertura {
+  color: var(--cor-texto-suave);
+}
+
+.tempo {
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.acoes-card {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.descricao {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Markdown renderizado (conteúdo do innerHTML não recebe o atributo de encapsulamento). */
+.texto-markdown {
+  overflow-wrap: anywhere;
+}
+
+.texto-markdown ::ng-deep p {
+  margin: 0 0 8px;
+}
+
+.texto-markdown ::ng-deep p:last-child {
+  margin-bottom: 0;
+}
+
+.texto-markdown ::ng-deep :is(ul, ol) {
+  margin: 0 0 8px;
+  padding-left: 22px;
+}
+
+.texto-markdown ::ng-deep code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--cor-fundo);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.88em;
+}
+
+.texto-markdown ::ng-deep pre {
+  overflow-x: auto;
+  margin: 0 0 8px;
+  padding: 10px;
+  border-radius: 6px;
+  background: var(--cor-fundo);
+}
+
+.texto-markdown ::ng-deep pre code {
+  padding: 0;
+  background: none;
+}
+
+.texto-markdown ::ng-deep blockquote {
+  margin: 0 0 8px;
+  padding-left: 10px;
+  border-left: 3px solid var(--cor-borda);
+  color: var(--cor-texto-suave);
+}
+
+/* Eventos automáticos: linha compacta e discreta. */
+.evento {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  color: var(--cor-texto-suave);
+  font-size: 0.85rem;
+}
+
+.evento p {
+  margin: 0;
+}
+
+.evento strong {
+  color: var(--cor-texto);
+  font-weight: 500;
+}
+
+.marcador {
+  position: relative;
+  justify-self: center;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--cor-borda);
+  border-radius: 50%;
+  background: var(--cor-fundo);
+}
+
+/* Edição e caixa de novo acompanhamento */
+.edicao,
+.compositor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.compositor {
+  position: sticky;
+  bottom: 8px;
+  z-index: 2;
+  box-shadow: var(--sombra);
+}
+
+.compositor h3 {
+  margin: 0;
+}
+
+.edicao select,
+.minutos {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-fundo);
+  color: var(--cor-texto);
+  font: inherit;
+}
+
+.minutos {
+  width: 90px;
+}
+
+.opcoes-compositor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+.segmentado {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.segmentado .chip:focus-within {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 2px;
+}
+
+.tempo-gasto {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.espaco {
+  flex: 1;
+}
+
+@media (max-width: 640px) {
+  .atalho {
+    display: none;
+  }
+
+  .compositor {
+    position: static;
+  }
+}

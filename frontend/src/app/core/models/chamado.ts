@@ -10,7 +10,9 @@ export type CampoHistorico =
   | 'URGENCIA'
   | 'STATUS'
   | 'RESPONSAVEL'
-  | 'POSICAO';
+  | 'POSICAO'
+  | 'ANEXO_ADICIONADO'
+  | 'ANEXO_REMOVIDO';
 
 /** Da maior para a menor, na ordem em que aparecem na interface. */
 export const URGENCIAS: readonly Urgencia[] = ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'];
@@ -25,12 +27,15 @@ export interface ChamadoResumo {
   projeto: Referencia;
   responsavel: Referencia | null;
   atualizadoEm: string;
+  /** Inclui acompanhamentos e anexos (atualizadoEm cobre só os dados do chamado). */
+  ultimaAtividadeEm: string;
 }
 
 export interface Chamado extends ChamadoResumo {
   descricao: string;
   criadoPor: Referencia;
   criadoEm: string;
+  tempoGastoTotalMinutos: number;
   versao: number;
 }
 
