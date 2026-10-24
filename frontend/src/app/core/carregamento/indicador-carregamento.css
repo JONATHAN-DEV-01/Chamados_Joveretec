@@ -1,0 +1,94 @@
+/* Barra indeterminada no topo da página. */
+.barra {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 60;
+  height: 3px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--cor-destaque) 20%, transparent);
+}
+
+.barra span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  background: var(--cor-destaque);
+  animation: deslizar 1.1s ease-in-out infinite;
+}
+
+/* Tela de carregamento: discreta, sobre o conteúdo. */
+.tela {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: var(--espaco);
+  background: color-mix(in srgb, var(--cor-fundo) 82%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--cor-texto-suave);
+  text-align: center;
+  animation: surgir 0.2s ease-out;
+}
+
+.tela p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.tela .aviso {
+  max-width: 320px;
+  font-size: 0.85rem;
+}
+
+.marca {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--cor-destaque);
+  animation: pulsar 1.2s ease-in-out infinite;
+}
+
+@keyframes deslizar {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes pulsar {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(0.6);
+    opacity: 0.45;
+  }
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .barra span,
+  .marca,
+  .tela {
+    animation: none;
+  }
+
+  .barra span {
+    width: 100%;
+  }
+}

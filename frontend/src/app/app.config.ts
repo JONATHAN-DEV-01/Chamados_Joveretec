@@ -12,6 +12,7 @@ import { TitleStrategy, provideRouter, withComponentInputBinding } from '@angula
 import { catchError, forkJoin, of } from 'rxjs';
 import { ConfiguracaoService } from './core/api/configuracao.service';
 import { apiInterceptor } from './core/auth/api.interceptor';
+import { carregamentoInterceptor } from './core/carregamento/carregamento.interceptor';
 import { AuthService } from './core/auth/auth.service';
 import { TituloDaPagina } from './core/titulo-da-pagina';
 import { routes } from './app.routes';
@@ -32,7 +33,7 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'pt-BR' },
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([apiInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([carregamentoInterceptor, apiInterceptor])),
     { provide: TitleStrategy, useClass: TituloDaPagina },
     provideAppInitializer(inicializar),
   ],

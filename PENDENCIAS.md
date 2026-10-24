@@ -168,16 +168,36 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 
 ## 11. Problemas conhecidos e decisões que merecem revisão
 
-- **Testes:** todos passando. Backend: **106** (`./mvnw test`). Frontend: **92** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
+- **Testes:** todos passando. Backend: **106** (`./mvnw test`). Frontend: **99** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
 - **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. **O upload TUS contra um Supabase real não foi testado** (não havia projeto disponível): veja o passo 9.5. O contrato com a API REST do Storage tem testes contra um servidor falso.
 - **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage.
 - **Armazenamento `local`** é só para desenvolvimento: no Render o disco é efêmero e os arquivos somem a cada deploy. Em produção use sempre `supabase`, que já é o padrão.
 - **"Mostrar itens anteriores" no feed** pagina a partir do mais recente. Se alguém publicar enquanto você navega por páginas antigas, um item pode aparecer repetido ou ser pulado até recarregar a página.
 - **Datas relativas** ("há 5 minutos") são calculadas na renderização e não se atualizam sozinhas com a página parada.
 - **Verificação ponta a ponta (manual, local):** login como admin, criar projeto, criar dev, criar chamados (com responsável, "eu mesmo" e posição), filtros e busca, detalhe com edição, status, "atribuir a mim", histórico, aviso de conflito 409, reordenação pelos botões, dashboard, troca e restauração da paleta, login como dev (sem menus de admin e com `/admin` bloqueado), e layout em 390px sem rolagem horizontal. Foram encontrados e corrigidos 3 problemas visuais. **Não deu para verificar o arrastar-e-soltar com o mouse:** a automação do navegador não conseguia enviar cliques à página nessa sessão, então a fila foi testada pelos botões subir/descer e por testes unitários. Teste o arrasto manualmente uma vez.
-- **Render Free hiberna** após inatividade: o primeiro acesso pode levar cerca de 30 a 60 s. A tela de login avisa disso. Para uso diário, considere uma instância paga.
+- **Render Free hiberna** depois de ~15 min sem tráfego, e a subida a frio leva ~55 s. Mitigado pelo ping periódico (seção 12). Se a instância ainda estiver dormindo, o app mostra o splash e a tela de carregamento com o aviso "O servidor pode estar acordando". Para garantia total, use uma instância paga.
 - **Sessão em `sessionStorage`:** fechar a aba desloga. É mais seguro, mas pode incomodar. Trocar para `localStorage` em `core/auth/auth.service.ts` é uma linha, ao custo de manter o token entre abas.
 - **Cores de status nos gráficos e badges** (azul, âmbar, verde-água) foram validadas para legibilidade e daltonismo sobre o **fundo escuro padrão**. Se o admin escolher uma paleta clara, elas continuam visíveis, mas não foram revalidadas. A tela de configurações avisa apenas sobre o contraste de texto e destaque.
 - **Qualquer usuário autenticado pode editar qualquer chamado.** Foi uma decisão da Parte 1 (ferramenta de equipe). Se só o criador, o responsável ou o admin deveriam editar, é preciso uma regra no backend.
 - **Requisito de Node ≥ 24.15** (Angular 22): máquinas ou CI com Node mais antigo falham no `ng` com uma mensagem clara. A Vercel precisa estar em 24.x (passo 4.4).
 - **Datas** são exibidas no fuso do navegador (`pt-BR`), a partir de UTC vindo da API.
+
+## 12. Manter o backend acordado (Render Free)
+
+O Render gratuito "dorme" depois de ~15 min sem requisições, e a primeira requisição seguinte espera a subida (~55 s). Para evitar isso, algo precisa chamar `https://chamados-backend-l7vy.onrender.com/q/health` a cada 10 minutos. Essa rota é do SmallRye Health, é pública e também testa o banco, o que mantém o Supabase ativo.
+
+**Já configurado no repositório:** o workflow [`.github/workflows/manter-acordado.yml`](.github/workflows/manter-acordado.yml) faz esse ping a cada 10 min, com 3 tentativas de 90 s para cobrir a subida a frio. Não precisa de secret nem de conta nova.
+- Para conferir: *GitHub → Actions → "Manter backend acordado"*. Execuções verdes indicam que o backend respondeu 200. Dá para rodar na hora em **Run workflow**.
+- Se a URL do backend mudar: *Settings → Secrets and variables → Actions → Variables → New repository variable* `BACKEND_HEALTH_URL` com a nova URL, sem editar o arquivo.
+- **Limitações do GitHub:** o agendamento é "melhor esforço" e pode atrasar alguns minutos em horários de pico. Ele também é **desativado automaticamente após 60 dias sem commits** no repositório. Se isso acontecer, o GitHub avisa por e-mail; reative em *Actions → Manter backend acordado → Enable workflow*.
+
+**Recomendado em conjunto, para garantia extra: UptimeRobot** (gratuito, intervalo mínimo de 5 min no plano Free):
+1. Crie uma conta em <https://uptimerobot.com>. Precisa ser feito por você, porque envolve cadastro e senha.
+2. **Add New Monitor** → *Monitor Type*: **HTTP(s)**.
+3. *Friendly Name*: `Chamados backend` · *URL*: `https://chamados-backend-l7vy.onrender.com/q/health` · *Monitoring Interval*: **10 minutes**, ou 5.
+4. *(Opcional)* Em *Alert Contacts*, deixe seu e-mail: você recebe um aviso se o backend cair, o que vira um monitoramento de graça.
+5. **Create Monitor**.
+
+Alternativa equivalente: <https://cron-job.org> → *Create cronjob* → URL acima → *Every 10 minutes* → *Save*.
+
+> **Horas grátis do Render:** uma instância Free acordada o mês inteiro consome cerca de 730 h das **750 h/mês** gratuitas da conta. Cabe, mas não sobra para um segundo serviço gratuito sempre ligado.

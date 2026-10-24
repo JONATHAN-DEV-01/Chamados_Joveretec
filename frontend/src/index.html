@@ -8,8 +8,76 @@
     <meta name="theme-color" content="#171717" />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
+    <script>
+      // Reaplica a última paleta usada (salva pelo TemaService) antes do Angular subir,
+      // para o splash e a primeira tela já saírem com as cores do sistema.
+      (function () {
+        try {
+          var p = JSON.parse(localStorage.getItem('chamados.paleta') || 'null');
+          var hex = /^#[0-9a-f]{6}$/i;
+          if (p && hex.test(p.fundo) && hex.test(p.destaque) && hex.test(p.texto) && hex.test(p.superficie)) {
+            var s = document.documentElement.style;
+            s.setProperty('--cor-fundo', p.fundo);
+            s.setProperty('--cor-superficie', p.superficie);
+            s.setProperty('--cor-destaque', p.destaque);
+            s.setProperty('--cor-texto', p.texto);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <!-- Splash da abertura: aparece antes do Angular e enquanto a configuração é buscada no backend
+         (que pode estar "acordando"). O Angular substitui o conteúdo de <app-root> ao iniciar. -->
+    <style>
+      .splash {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        padding: 16px;
+        background: var(--cor-fundo, #171717);
+        color: color-mix(in srgb, var(--cor-texto, #ededed) 65%, var(--cor-fundo, #171717));
+        font: 0.9rem system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        text-align: center;
+      }
+      .splash-marca {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: var(--cor-destaque, #da0037);
+        animation: splash-pulsar 1.2s ease-in-out infinite;
+      }
+      .splash p {
+        margin: 0;
+      }
+      .splash-aviso {
+        max-width: 320px;
+        font-size: 0.85rem;
+        opacity: 0;
+        animation: splash-surgir 0.4s ease-out 6s forwards;
+      }
+      @keyframes splash-pulsar {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(0.6); opacity: 0.45; }
+      }
+      @keyframes splash-surgir {
+        to { opacity: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .splash-marca { animation: none; }
+        .splash-aviso { animation-duration: 0s; }
+      }
+    </style>
   </head>
   <body>
-    <app-root></app-root>
+    <app-root>
+      <div class="splash" role="status" aria-live="polite">
+        <div class="splash-marca" aria-hidden="true"></div>
+        <p>Carregando…</p>
+        <p class="splash-aviso">O servidor pode estar acordando. Isso leva até um minuto na primeira vez.</p>
+      </div>
+    </app-root>
   </body>
 </html>

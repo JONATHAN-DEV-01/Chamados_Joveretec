@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SEM_INDICADOR } from '../carregamento/carregamento.service';
 import { Anexo, EnvioAutorizado } from '../models/feed';
 import { parametros, urlApi } from './parametros';
 
@@ -29,7 +30,11 @@ export class AnexoService {
   /** Link assinado de curta duração (absoluto). `inline` para pré-visualizar imagens. */
   linkDeDownload(anexoId: number, inline = false): Observable<string> {
     return this.http
-      .get<{ url: string }>(urlApi(`/anexos/${anexoId}/download`), { params: parametros({ inline }) })
+      .get<{ url: string }>(urlApi(`/anexos/${anexoId}/download`), {
+        params: parametros({ inline }),
+        // Prévias de imagem carregam em segundo plano, sem acionar o indicador global.
+        context: new HttpContext().set(SEM_INDICADOR, inline),
+      })
       .pipe(map(({ url }) => urlAbsoluta(url)));
   }
 

@@ -1,0 +1,36 @@
+name: Manter backend acordado
+
+# O Render gratuito hiberna após ~15 min sem tráfego e leva ~55 s para voltar.
+# Este ping a cada 10 min mantém a instância (e a conexão com o Supabase) ativa.
+# Observações: o agendamento do GitHub é "melhor esforço" (pode atrasar alguns minutos)
+# e fica desativado após 60 dias sem commits no repositório. Ver PENDENCIAS.md.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: manter-acordado
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      # Pode ser trocada sem editar o arquivo: Settings → Secrets and variables → Actions → Variables.
+      URL_SAUDE: ${{ vars.BACKEND_HEALTH_URL || 'https://chamados-backend-l7vy.onrender.com/q/health' }}
+    steps:
+      - name: Ping no health check
+        # Até 3 tentativas com 90 s cada: cobre a subida a frio (~55 s).
+        run: |
+          for tentativa in 1 2 3; do
+            status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 "$URL_SAUDE" || echo 000)
+            echo "Tentativa $tentativa: HTTP $status"
+            if [ "$status" = "200" ]; then exit 0; fi
+            sleep 10
+          done
+          echo "::warning::Backend não respondeu 200 em $URL_SAUDE"
+          exit 1

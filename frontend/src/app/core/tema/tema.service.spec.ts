@@ -24,6 +24,17 @@ describe('TemaService', () => {
     expect(document.documentElement.style.getPropertyValue('--cor-destaque')).toBe('#DA0037');
   });
 
+  it('guarda a paleta global para a próxima abertura (splash do index.html)', () => {
+    localStorage.removeItem('chamados.paleta');
+    const paleta = { fundo: '#0F172A', superficie: '#334155', destaque: '#1E88E5', texto: '#F8FAFC' };
+    servico.aplicar(paleta);
+    expect(JSON.parse(localStorage.getItem('chamados.paleta')!)).toEqual(paleta);
+
+    // A pré-visualização (elemento local) não sobrescreve a paleta guardada.
+    servico.aplicar({ ...paleta, destaque: '#FF0000' }, document.createElement('div'));
+    expect(JSON.parse(localStorage.getItem('chamados.paleta')!).destaque).toBe('#1E88E5');
+  });
+
   it('ignora paletas com cor inválida', () => {
     const elemento = document.createElement('div');
     servico.aplicar({ fundo: 'preto', superficie: '#333333', destaque: '#FFCC00', texto: '#FAFAFA' }, elemento);

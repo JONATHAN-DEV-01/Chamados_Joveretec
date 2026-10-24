@@ -1,6 +1,6 @@
 # Plano — Sistema de Chamados Joveretec
 
-> Status: **Partes 1, 2 e 3 concluídas**. Backend (106 testes) e frontend Angular 22 (92 testes) implementados,
+> Status: **Partes 1, 2 e 3 concluídas**. Backend (106 testes) e frontend Angular 22 (99 testes) implementados,
 > incluindo o feed de acompanhamentos e os anexos no Supabase Storage (Parte 3). CI no GitHub Actions e deploy
 > preparado (Render, Vercel, Supabase). Para rodar, veja o [README](../README.md); os passos manuais estão em
 > [PENDENCIAS.md](../PENDENCIAS.md). As seções abaixo descrevem o backend.
@@ -418,7 +418,7 @@ Além dos testes, a imagem Docker foi validada no perfil `prod` (PostgreSQL 17 e
 - **Chaves JWT:** gerar com `openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out priv.pem` e `openssl pkey -in priv.pem -pubout -out pub.pem`. Colar o conteúdo PEM completo (com BEGIN/END) nas variáveis. Não versionar (`*.pem` está no `.gitignore`).
 - **Supabase (banco):** o Render não tem IPv6 e a conexão direta do Supabase é IPv6. Use a string do **Session pooler** (IPv4, porta 5432), ex.: `jdbc:postgresql://aws-0-<regiao>.pooler.supabase.com:5432/postgres?sslmode=require`, com usuário `postgres.<ref-do-projeto>`. Evite o *Transaction pooler* (6543), que não lida bem com prepared statements do JDBC. O pool da aplicação está em 10 conexões (`quarkus.datasource.jdbc.max-size`). O Flyway roda na subida e cria tudo, inclusive no Postgres do Supabase (testado com PG 17 e 18).
 - **Vercel (frontend):** incluir o domínio da Vercel (e o de preview, se for usar) em `CORS_ORIGINS`, separado por vírgula. O CORS já libera `Authorization` e `Content-Type` e expõe `Location`.
-- **Render free** hiberna depois de um tempo ocioso. A primeira requisição pode levar cerca de 30 a 60 s. Vale mostrar um "carregando" no login.
+- **Render free** hiberna depois de ~15 min ocioso e leva ~55 s para subir. Mitigado pelo workflow `manter-acordado.yml` (ping em `/q/health` a cada 10 min) e, no frontend, pelo splash de abertura e pelo indicador global de carregamento (barra no topo a partir de 150 ms, tela a partir de 1,5 s e aviso de "servidor acordando" a partir de 6 s).
 
 ### CI (GitHub Actions)
 - Backend: `cd backend && ./mvnw -B verify` com JDK 21 (Temurin). Os testes precisam de Docker (Dev Services), que já existe nos runners `ubuntu-latest`. Não é preciso nenhum serviço de banco no workflow.
