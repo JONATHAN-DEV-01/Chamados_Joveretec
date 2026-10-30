@@ -59,6 +59,11 @@
   font-size: 0.85rem;
 }
 
+.bloqueado .alca {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .setas {
   display: flex;
   gap: 4px;

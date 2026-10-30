@@ -19,13 +19,16 @@ export type CampoHistorico =
 /** Da maior para a menor, na ordem em que aparecem na interface. */
 export const URGENCIAS: readonly Urgencia[] = ['CRITICA', 'ALTA', 'MEDIA', 'BAIXA'];
 export const STATUS: readonly StatusChamado[] = ['ABERTO', 'EM_ANDAMENTO', 'CONCLUIDO'];
+/** Concluídos saem da fila do projeto. */
+export const STATUS_DA_FILA: readonly StatusChamado[] = ['ABERTO', 'EM_ANDAMENTO'];
 
 export interface ChamadoResumo {
   id: number;
   titulo: string;
   urgencia: Urgencia;
   status: StatusChamado;
-  posicao: number;
+  /** Posição na fila do projeto; null para concluídos (eles saem da fila). */
+  posicao: number | null;
   projeto: Referencia;
   /** Em ordem alfabética; vazio = sem responsável. */
   responsaveis: Referencia[];

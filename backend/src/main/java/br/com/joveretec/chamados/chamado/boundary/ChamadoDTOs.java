@@ -64,7 +64,8 @@ public final class ChamadoDTOs {
     }
 
     /** {@code ultimaAtividadeEm} inclui acompanhamentos e anexos; {@code atualizadoEm}, só os dados do chamado. */
-    public record ChamadoResumoDTO(Long id, String titulo, Urgencia urgencia, StatusChamado status, int posicao,
+    /** {@code posicao} é {@code null} para chamados concluídos (eles saem da fila). */
+    public record ChamadoResumoDTO(Long id, String titulo, Urgencia urgencia, StatusChamado status, Integer posicao,
                                    ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
                                    ReferenciaDTO responsavel, Instant atualizadoEm, Instant ultimaAtividadeEm) {
 
@@ -78,7 +79,7 @@ public final class ChamadoDTOs {
     }
 
     public record ChamadoDTO(Long id, String titulo, String descricao, Urgencia urgencia, StatusChamado status,
-                             int posicao, ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
+                             Integer posicao, ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
                              ReferenciaDTO responsavel, ReferenciaDTO criadoPor,
                              Instant criadoEm, Instant atualizadoEm, Instant ultimaAtividadeEm,
                              long tempoGastoTotalMinutos, long versao) {

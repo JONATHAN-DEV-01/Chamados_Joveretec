@@ -48,11 +48,15 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
         chamados.forEach(c -> Hibernate.initialize(c.responsaveisParaCarga()));
     }
 
+    /** Primeira posição livre no fim da fila do projeto (a fila só tem chamados ativos). */
     public int proximaPosicao(Long projetoId) {
-        return (int) count("projeto.id", projetoId) + 1;
+        return (int) count("projeto.id = ?1 and posicao is not null", projetoId) + 1;
     }
 
-    /** Soma {@code delta} à posição dos chamados do projeto cujas posições estão no intervalo [de, ate]. */
+    /**
+     * Soma {@code delta} à posição dos chamados do projeto cujas posições estão no intervalo [de, ate]
+     * (concluídos, sem posição, ficam de fora).
+     */
     public void deslocarPosicoes(Long projetoId, int de, int ate, int delta) {
         if (de > ate) {
             return;

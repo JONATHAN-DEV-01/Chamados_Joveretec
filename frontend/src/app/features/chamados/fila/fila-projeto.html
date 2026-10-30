@@ -16,14 +16,27 @@
     </select>
   </div>
   <p class="dica">
-    Arraste pelo ícone ⠿ ou use as setas para definir a ordem de atendimento dentro do projeto. Na lista geral,
-    os chamados aparecem primeiro por urgência e, depois, nesta ordem.
+    Arraste pelo ícone ⠿ ou use as setas para definir a ordem de atendimento dentro do projeto. A fila mostra só
+    chamados abertos e em andamento; os concluídos saem dela e continuam na página Chamados.
   </p>
 </div>
 
 @if (!projetoId()) {
   <p class="vazio">Escolha um projeto para ver e reordenar a fila.</p>
 } @else {
+  <app-filtros-chamados
+    [parametros]="parametros()"
+    [mostrarProjeto]="false"
+    [statusDisponiveis]="STATUS_DA_FILA"
+    (filtrar)="filtrar($event)"
+    (limpar)="limparFiltros()"
+  />
+  @if (filtrada()) {
+    <p class="alerta alerta-info" role="status">
+      Com filtros ativos a reordenação fica desligada, para não mexer na ordem a partir de uma lista parcial.
+      Limpe os filtros para reordenar.
+    </p>
+  }
   @if (carregamento.erro(); as erro) {
     <p class="alerta" role="alert">{{ erro }}</p>
   }
@@ -38,14 +51,14 @@
     class="fila"
     cdkDropList
     [cdkDropListData]="itens()"
-    [cdkDropListDisabled]="salvando()"
+    [cdkDropListDisabled]="reordenacaoBloqueada()"
     (cdkDropListDropped)="soltar($event)"
     [attr.aria-busy]="salvando() || carregamento.carregando()"
   >
     @for (chamado of itens(); track chamado.id; let i = $index, primeiro = $first, ultimo = $last) {
-      <li class="item" cdkDrag [cdkDragData]="chamado">
-        <span class="alca" cdkDragHandle aria-hidden="true" title="Arrastar">⠿</span>
-        <span class="posicao">{{ i + 1 }}</span>
+      <li class="item" cdkDrag [cdkDragData]="chamado" [class.bloqueado]="filtrada()">
+        <span class="alca" cdkDragHandle aria-hidden="true" [attr.title]="filtrada() ? null : 'Arrastar'">⠿</span>
+        <span class="posicao">{{ chamado.posicao }}</span>
         <div class="conteudo">
           <a [routerLink]="['/chamados', chamado.id]">{{ chamado.titulo }}</a>
           <div class="meta">
@@ -58,7 +71,7 @@
           <button
             type="button"
             class="btn btn-pequeno"
-            [disabled]="primeiro || salvando()"
+            [disabled]="primeiro || reordenacaoBloqueada()"
             (click)="mover(i, i - 1)"
             [attr.aria-label]="'Subir ' + chamado.titulo"
           >
@@ -67,7 +80,7 @@
           <button
             type="button"
             class="btn btn-pequeno"
-            [disabled]="ultimo || salvando()"
+            [disabled]="ultimo || reordenacaoBloqueada()"
             (click)="mover(i, i + 1)"
             [attr.aria-label]="'Descer ' + chamado.titulo"
           >
@@ -77,7 +90,9 @@
       </li>
     } @empty {
       @if (!carregamento.carregando()) {
-        <li class="vazio">Este projeto ainda não tem chamados.</li>
+        <li class="vazio">
+          {{ filtrada() ? 'Nenhum chamado da fila com esses filtros.' : 'Nenhum chamado aberto ou em andamento neste projeto.' }}
+        </li>
       }
     }
   </ol>

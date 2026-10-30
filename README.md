@@ -47,8 +47,8 @@ Abra `http://localhost:4200` e entre com o admin de desenvolvimento. O frontend 
 
 ## Testes
 ```bash
-cd backend  && ./mvnw test           # 117 testes (API contra PostgreSQL real; requer Docker)
-cd frontend && npm run test:ci       # 106 testes unitários (Vitest)
+cd backend  && ./mvnw test           # 125 testes (API contra PostgreSQL real; requer Docker)
+cd frontend && npm run test:ci       # 113 testes unitários (Vitest)
 ```
 O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os dois em todo push e pull request, além do build da imagem Docker e do build de produção do frontend. O [`manter-acordado.yml`](.github/workflows/manter-acordado.yml) chama o health check do backend a cada 10 minutos, para o Render gratuito não hibernar.
 

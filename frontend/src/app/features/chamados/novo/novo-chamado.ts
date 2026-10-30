@@ -8,7 +8,7 @@ import { ProjetoService, TAMANHO_MAXIMO } from '../../../core/api/projeto.servic
 import { UsuarioService } from '../../../core/api/usuario.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { filaDeEnvios } from '../../../core/envio/fila-de-envios';
-import { Chamado, ChamadoResumo, URGENCIAS, Urgencia } from '../../../core/models/chamado';
+import { Chamado, ChamadoResumo, STATUS_DA_FILA, URGENCIAS, Urgencia } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { listaDeApoio } from '../../../shared/carregamento';
 import { AreaDeAnexos } from '../../../shared/componentes/area-de-anexos';
@@ -112,7 +112,7 @@ export class NovoChamado implements OnInit {
 
   private carregarFila(projetoId: number) {
     this.formulario.controls.posicao.setValue('');
-    return this.chamados.listar({ projetoId, ordem: 'POSICAO' }, { tamanho: TAMANHO_MAXIMO }).pipe(
+    return this.chamados.listar({ projetoId, status: [...STATUS_DA_FILA], ordem: 'POSICAO' }, { tamanho: TAMANHO_MAXIMO }).pipe(
       map((pagina) => pagina.itens),
       catchError(() => of<ChamadoResumo[]>([])),
     );

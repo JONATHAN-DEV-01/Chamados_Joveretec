@@ -59,8 +59,9 @@ public class Chamado {
     @Column(nullable = false, length = 15)
     private StatusChamado status = StatusChamado.ABERTO;
 
-    @Column(nullable = false)
-    private int posicao;
+    /** Posição na fila do projeto (1..n entre os ativos); {@code null} quando concluído. */
+    @Column
+    private Integer posicao;
 
     /** Nenhum responsável = "sem responsável". Carregados em lote nas listagens (sem N+1). */
     @ManyToMany
@@ -149,6 +150,15 @@ public class Chamado {
         this.posicao = posicao;
     }
 
+    /** Sai da fila (ao ser concluído). */
+    public void sairDaFila() {
+        this.posicao = null;
+    }
+
+    public boolean estaNaFila() {
+        return posicao != null;
+    }
+
     public Long getId() {
         return id;
     }
@@ -173,7 +183,7 @@ public class Chamado {
         return status;
     }
 
-    public int getPosicao() {
+    public Integer getPosicao() {
         return posicao;
     }
 

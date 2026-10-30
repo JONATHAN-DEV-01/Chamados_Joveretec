@@ -28,8 +28,8 @@ class FiltrosChamadoTest {
      * 1: "Login quebrado"       BAIXA    dev        ABERTO
      * 2: "Relatório lento"      CRITICA  outroDev   EM_ANDAMENTO
      * 3: "Ajustar layout"       ALTA     -          ABERTO
-     * 4: "Erro no login social" CRITICA  dev        CONCLUIDO
-     * 5: "Documentar API"       MEDIA    outroDev   ABERTO
+     * 4: "Documentar API"       MEDIA    outroDev   ABERTO
+     * -: "Erro no login social" CRITICA  dev        CONCLUIDO (fora da fila)
      */
     @BeforeEach
     void preparar() {
@@ -56,10 +56,11 @@ class FiltrosChamadoTest {
 
     @Test
     void ordenaSomentePorPosicaoQuandoSolicitado() {
+        // O concluído saiu da fila (sem posição) e vai para o fim.
         doProjeto().queryParam("ordem", "POSICAO").get("/api/chamados")
                 .then().statusCode(200)
                 .body("itens.titulo", contains("Login quebrado", "Relatório lento", "Ajustar layout",
-                        "Erro no login social", "Documentar API"));
+                        "Documentar API", "Erro no login social"));
     }
 
     @Test

@@ -120,8 +120,12 @@
           </dd>
           <dt class="rotulo">Posição na fila</dt>
           <dd>
-            #{{ c.posicao }}
-            <a [routerLink]="['/fila']" [queryParams]="{ projetoId: c.projeto.id }">reordenar</a>
+            @if (c.posicao) {
+              #{{ c.posicao }}
+              <a [routerLink]="['/fila']" [queryParams]="{ projetoId: c.projeto.id }">reordenar</a>
+            } @else {
+              <span class="texto-suave">Fora da fila (concluído)</span>
+            }
           </dd>
           <dt class="rotulo">Criado por</dt>
           <dd>{{ c.criadoPor.nome }}</dd>

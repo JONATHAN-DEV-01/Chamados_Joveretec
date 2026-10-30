@@ -88,7 +88,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | urgencia | varchar(10) | `BAIXA` \| `MEDIA` \| `ALTA` \| `CRITICA` |
 | urgencia_peso | smallint | **coluna gerada** (`CRITICA`=4 … `BAIXA`=1), usada na ordenação e indexável |
 | status | varchar(15) | `ABERTO` \| `EM_ANDAMENTO` \| `CONCLUIDO`, default `ABERTO` |
-| posicao | integer | ≥ 1, posição na fila do projeto |
+| posicao | integer | ≥ 1, posição na fila do projeto (1..n entre os **ativos**); `null` quando `CONCLUIDO` (V5, com `CHECK`) |
 | responsavel_id | bigint FK → usuario | **obsoleta desde a V4** (substituída por `chamado_responsavel`); será removida numa migration futura |
 | criado_por_id | bigint FK → usuario | not null |
 | versao | bigint | lock otimista (evita sobrescrever edição concorrente → 409) |
@@ -267,9 +267,9 @@ HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome },
 | GET | `/api/chamados/{id}` | Autenticado | — | `200 ChamadoDTO` |
 | POST | `/api/chamados` | Autenticado | `{ projetoId, titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), posicao? }` | `201 ChamadoDTO` |
 | PUT | `/api/chamados/{id}` | Autenticado | `{ titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), versao }` | `200 ChamadoDTO` · 409 versão desatualizada |
-| PATCH | `/api/chamados/{id}/status` | Autenticado | `{ status }` | `200 ChamadoDTO` |
+| PATCH | `/api/chamados/{id}/status` | Autenticado | `{ status }` — concluir tira da fila (sem buraco); reabrir coloca no fim | `200 ChamadoDTO` |
 | POST | `/api/chamados/{id}/atribuir-a-mim` | Autenticado | — (inclui quem chamou entre os responsáveis, sem tirar os demais) | `200 ChamadoDTO` |
-| PUT | `/api/chamados/{id}/posicao` | Autenticado | `{ posicao }` (1..n) | `200 ChamadoDTO` · 422 fora do intervalo |
+| PUT | `/api/chamados/{id}/posicao` | Autenticado | `{ posicao }` (1..n entre os ativos) | `200 ChamadoDTO` · 422 fora do intervalo ou chamado concluído |
 | GET | `/api/chamados/{id}/historico?pagina&tamanho` | Autenticado | — | `200 Página<HistoricoDTO>` (mais recente primeiro) |
 
 A listagem usa consulta com `JOIN FETCH` de projeto e responsável para evitar N+1, e `count` separado sem fetch. O detalhe também faz fetch do autor; o histórico faz fetch do usuário de cada registro.
@@ -418,7 +418,7 @@ Além dos testes, a imagem Docker foi validada no perfil `prod` (PostgreSQL 17 e
 - **Usuário desativado:** o token continua válido para leitura até expirar (padrão 8h), mas qualquer alteração retorna 403.
 - **Edição de chamado:** `PUT /api/chamados/{id}` exige `versao` (vem no `GET /api/chamados/{id}`). Em 409, avisar "alterado por outra pessoa" e recarregar. Status, "atribuir a mim" e posição têm endpoints próprios e **não** exigem `versao`, mas incrementam a versão: recarregue o chamado antes de abrir o formulário de edição.
 - **Responsáveis:** `responsavelIds` é a lista completa: no `PUT`, quem não estiver nela sai (`[]` = sem responsável). Na criação, autoatribuição = incluir o próprio `id` (de `/api/auth/me`). Quem já era responsável e foi desativado pode continuar na lista; quem entra precisa estar ativo. O filtro `responsavelId` traz os chamados em que a pessoa é **um** dos responsáveis. O campo antigo `responsavelId` (único) ainda é aceito quando `responsavelIds` não vem.
-- **Fila do projeto:** listar com `?projetoId=X&ordem=POSICAO&tamanho=100`. Ao soltar um item, chamar `PUT /api/chamados/{id}/posicao` com a nova posição (1-based) e recarregar a lista.
+- **Fila do projeto:** só chamados `ABERTO` e `EM_ANDAMENTO` (V5). Listar com `?projetoId=X&status=ABERTO,EM_ANDAMENTO&ordem=POSICAO&tamanho=100`. Ao soltar um item, chamar `PUT /api/chamados/{id}/posicao` com a nova posição (1-based) e recarregar a lista. A tela usa os mesmos filtros da lista (componente `filtros-chamados`) e desliga a reordenação enquanto houver filtro, porque a lista fica parcial.
 - **Paginação:** `pagina` começa em 0; `tamanho` máximo 100. O tamanho padrão sugerido vem de `geral.tamanhoPaginaPadrao` em `/api/configuracoes`.
 - **Paleta:** `GET /api/configuracoes` é público. Aplicar antes do login, por exemplo `--cor-fundo: paleta.fundo`, `--cor-superficie: paleta.superficie`, `--cor-destaque: paleta.destaque`, `--cor-texto: paleta.texto`. As cores voltam sempre em maiúsculas `#RRGGBB`.
 - **Erros:** sempre `{ codigo, mensagem, detalhes[], timestamp }`. `mensagem` já está em português e pode ser exibida; `detalhes[].campo` casa com o nome do campo do formulário.

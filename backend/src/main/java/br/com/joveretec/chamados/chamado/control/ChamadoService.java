@@ -106,16 +106,37 @@ public class ChamadoService {
         return chamado;
     }
 
+    /**
+     * Concluir tira o chamado da fila e fecha o buraco; reabrir (sair de Concluído) o coloca no
+     * fim da fila. A fila é alterada com o projeto bloqueado, como na reordenação.
+     */
     @Transactional
     public Chamado alterarStatus(Long id, StatusChamado status, Long autorId) {
         Usuario autor = usuarios.buscarAutor(autorId);
         Chamado chamado = buscarParaAlteracao(id);
+        boolean concluir = status == StatusChamado.CONCLUIDO;
+        boolean mudaFila = concluir == chamado.estaNaFila();
+        Long projetoId = chamado.getProjeto().getId();
+        if (mudaFila) {
+            projetos.buscarAtivoParaAlteracao(projetoId);
+            chamados.recarregar(chamado);
+        }
         historico.registrarSeAlterado(chamado, autor, CampoHistorico.STATUS, chamado.getStatus(), status);
-        chamado.alterarStatus(status);
+        if (mudaFila && concluir) {
+            int saiu = chamado.getPosicao();
+            chamado.alterarStatus(status);
+            chamado.sairDaFila();
+            // O update em lote faz o flush da linha acima antes (status e posição juntos).
+            chamados.deslocarPosicoes(projetoId, saiu + 1, Integer.MAX_VALUE, -1);
+        } else if (mudaFila) {
+            chamado.moverParaPosicao(chamados.proximaPosicao(projetoId));
+            chamado.alterarStatus(status);
+        } else {
+            chamado.alterarStatus(status);
+        }
         return chamado;
     }
 
-    /** Inclui quem chamou entre os responsáveis, sem tirar os demais (nada muda se já era um deles). */
     @Transactional
     public Chamado atribuirAoAutor(Long id, Long autorId) {
         Usuario autor = usuarios.buscarAutor(autorId);
@@ -134,6 +155,9 @@ public class ChamadoService {
         Long projetoId = chamado.getProjeto().getId();
         projetos.buscarAtivoParaAlteracao(projetoId);
         chamados.recarregar(chamado);
+        if (!chamado.estaNaFila()) {
+            throw ExcecaoDeNegocio.regraDeNegocio("Chamados concluídos não ficam na fila. Reabra o chamado para reposicioná-lo.");
+        }
 
         int atual = chamado.getPosicao();
         int destino = validarPosicao(novaPosicao, chamados.proximaPosicao(projetoId) - 1);
