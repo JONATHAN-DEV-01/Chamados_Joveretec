@@ -3,11 +3,30 @@
 Tudo o que precisa ser feito à mão para colocar o sistema no ar, mais o que ficou de fora e os problemas conhecidos.
 O código, os testes, o CI e os arquivos de deploy (`backend/Dockerfile`, `render.yaml`, `frontend/vercel.json`) já estão no repositório.
 
-**Ordem recomendada:** 1. Supabase (banco) → 2. Chaves JWT → 3. Render → 4. Vercel → 5. Voltar ao Render para ajustar o CORS → 9. Supabase Storage (buckets e variáveis dos anexos) → 8. Segurança pós-deploy.
+**O sistema já está no ar** (seção 0). As seções 1 a 5 e 9 ficam como referência, para refazer o deploy ou trocar uma credencial. Ordem usada: 1. Supabase (banco) → 2. Chaves JWT → 3. Render → 4. Vercel → 5. Voltar ao Render para ajustar o CORS → 9. Supabase Storage (buckets e variáveis dos anexos) → 8. Segurança pós-deploy.
 
 ---
 
+## 0. Estado da produção (conferido em 30/10/2026)
+
+| Parte | Endereço | Situação |
+|---|---|---|
+| Frontend (Vercel) | <https://chamados-joveretec-ten.vercel.app> | No ar. Cabeçalhos do `vercel.json` aplicados e bundle apontando para o backend abaixo. |
+| Backend (Render, Free) | <https://chamados-backend-l7vy.onrender.com> | `/q/health` responde `UP`, com o banco `UP`. O CORS libera só o domínio da Vercel; outra origem recebe 403. |
+| Banco (Supabase, região *East US*) | Session pooler `aws-0-us-east-1` | PostgreSQL 17. Migrations V1 a V3 aplicadas em 24/10. RLS ligado em todas as tabelas de `public`. Já tem uso real: usuários, projetos, chamados, acompanhamentos e anexos. |
+| Storage (Supabase) | Buckets `chamados-anexos` e `sistema` | Os dois privados, com a política restritiva do `storage.sql`. O upload TUS funciona em produção (seção 9.5). |
+| Repositório | `JONATHAN-DEV-01/Chamados_Joveretec` | **Público.** Deploy automático no Render e na Vercel a cada push na `main`. |
+
+**O que falta agora, por prioridade:**
+- [ ] **Manter o backend acordado de verdade:** o ping do GitHub Actions está rodando só a cada ~5–6 h, e o backend continua dormindo (a primeira resposta levou ~75 s). Configure o UptimeRobot ou o cron-job.org (seção 12).
+- [ ] **Criar um segundo admin**: hoje há só um ativo (seção 8).
+- [ ] **Apagar as cópias locais das chaves JWT** (`jwt-privada.pem` e `jwt-publica.pem` na raiz do projeto), depois de guardar a privada num cofre (seção 2).
+- [ ] Revisar o restante da checklist de [Segurança](#8-segurança).
+- [ ] Testar uma vez o arrastar-e-soltar da fila com o mouse (seção 11).
+
 ## 1. Banco de dados — Supabase
+
+> ✅ Concluído. O projeto em produção ficou na região *East US* (`aws-0-us-east-1`).
 
 1. Acesse <https://supabase.com>, entre na conta e clique em **New project**.
 2. Escolha a organização, dê um nome (ex.: `chamados-joveretec`) e escolha a região mais próxima dos usuários e do Render (ex.: *South America (São Paulo)*).
@@ -24,6 +43,8 @@ O código, os testes, o CI e os arquivos de deploy (`backend/Dockerfile`, `rende
 
 ## 2. Chaves JWT de produção
 
+> ✅ Chaves cadastradas no Render. Falta apagar as cópias locais (`*.pem` na raiz do projeto) depois de guardar a privada num cofre.
+
 Gere um par RSA só para produção, num terminal com OpenSSL (o Git Bash já tem):
 ```bash
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out jwt-privada.pem
@@ -35,6 +56,8 @@ openssl pkey -in jwt-privada.pem -pubout -out jwt-publica.pem
 - Trocar as chaves invalida todas as sessões abertas. Isso é útil se houver suspeita de vazamento.
 
 ## 3. Backend — Render
+
+> ✅ Concluído: `https://chamados-backend-l7vy.onrender.com`.
 
 **Opção A, Blueprint (usa o `render.yaml`):**
 1. Em <https://dashboard.render.com>: **New → Blueprint**, conecte o GitHub e selecione `JONATHAN-DEV-01/Chamados_Joveretec`.
@@ -52,20 +75,24 @@ openssl pkey -in jwt-privada.pem -pubout -out jwt-publica.pem
 
 ## 4. Frontend — Vercel
 
+> ✅ Concluído: `https://chamados-joveretec-ten.vercel.app`. O domínio `chamados-joveretec.vercel.app`, usado como exemplo nas versões anteriores deste arquivo, **não** é deste projeto (responde 404).
+
 1. Em <https://vercel.com/new>, importe o repositório `JONATHAN-DEV-01/Chamados_Joveretec`.
 2. **Root Directory:** `frontend`. O resto (build `npm run build:producao`, saída `dist/frontend/browser`, rewrite da SPA, cabeçalhos) vem do `frontend/vercel.json`.
-3. **Environment Variables:** `API_URL` = URL do Render **sem** `/api` e sem barra final (ex.: `https://chamados-backend.onrender.com`). Marque *Production* e *Preview*.
+3. **Environment Variables:** `API_URL` = URL do Render **sem** `/api` e sem barra final (ex.: `https://chamados-backend-l7vy.onrender.com`). Marque *Production* e *Preview*.
 4. Em **Settings → General → Node.js Version**, selecione **24.x**. O Angular 22 exige Node ≥ 24.15.
 5. **Deploy**. A **Production Branch** (em *Settings → Git*) deve ser `main`.
-6. Anote o domínio final (ex.: `https://chamados-joveretec.vercel.app`) para o próximo passo.
+6. Anote o domínio final (ex.: `https://chamados-joveretec-ten.vercel.app`) para o próximo passo.
 
 > Sem `API_URL`, o build falha de propósito, com a mensagem "Defina a variável de ambiente API_URL".
 
 ## 5. Ajustar o CORS no Render
 
+> ✅ Concluído e conferido em 30/10: o preflight vindo da Vercel recebe `Access-Control-Allow-Origin` com o domínio dela, e outra origem recebe 403.
+
 1. No Render, edite `CORS_ORIGINS` com o domínio da Vercel, sem barra final. Para vários domínios, separe por vírgula:
    ```
-   CORS_ORIGINS=https://chamados-joveretec.vercel.app
+   CORS_ORIGINS=https://chamados-joveretec-ten.vercel.app
    ```
 2. Se usar deploys de *Preview* da Vercel, que têm um domínio diferente a cada deploy, inclua também o domínio de preview fixo do projeto, ou teste as previews contra um backend de staging.
 3. Salve. O Render reinicia o serviço. Teste o login pelo domínio da Vercel.
@@ -82,7 +109,7 @@ openssl pkey -in jwt-privada.pem -pubout -out jwt-publica.pem
 | `JWT_PUBLIC_KEY` | sim | Chave pública RSA em PEM, com BEGIN/END | `-----BEGIN PUBLIC KEY-----…` |
 | `JWT_ISSUER` | não | Emissor (`iss`) do token. Padrão `https://chamados.joveretec.com.br` | `https://chamados.joveretec.com.br` |
 | `JWT_DURACAO_MINUTOS` | não | Validade do token. Padrão 480 (8h) | `480` |
-| `CORS_ORIGINS` | sim | Origens permitidas, separadas por vírgula | `https://chamados-joveretec.vercel.app` |
+| `CORS_ORIGINS` | sim | Origens permitidas, separadas por vírgula | `https://chamados-joveretec-ten.vercel.app` |
 | `ADMIN_NOME` | não | Nome do admin inicial. Padrão `Administrador` | `Administrador` |
 | `ADMIN_EMAIL` | sim | E-mail do admin inicial | `admin@joveretec.com.br` |
 | `ADMIN_SENHA` | sim | Senha **inicial** do admin (8 a 72 caracteres) | — |
@@ -98,7 +125,7 @@ openssl pkey -in jwt-privada.pem -pubout -out jwt-publica.pem
 ### Frontend (Vercel)
 | Variável | Obrigatória | Descrição | Exemplo |
 |---|---|---|---|
-| `API_URL` | sim (build de produção) | URL pública do backend, sem `/api` e sem barra final | `https://chamados-backend.onrender.com` |
+| `API_URL` | sim (build de produção) | URL pública do backend, sem `/api` e sem barra final | `https://chamados-backend-l7vy.onrender.com` |
 
 Em desenvolvimento, o frontend usa `src/environments/environment.ts` (`http://localhost:8080`) e não precisa de variável. O frontend **não** recebe nenhuma chave do Supabase por variável: a chave pública necessária para o upload vem do backend junto com a autorização de cada envio.
 
@@ -115,15 +142,20 @@ Em desenvolvimento, o frontend usa `src/environments/environment.ts` (`http://lo
 ## 8. Segurança
 
 - [ ] **Trocar a senha do admin inicial** logo após o primeiro login: menu do usuário (canto superior direito) → **Minha conta → Alterar senha**. Depois, troque também o valor de `ADMIN_SENHA` no Render por outro valor aleatório. A variável não é mais usada, mas precisa existir, e assim a senha antiga não fica guardada lá.
-- [ ] **Chaves JWT de produção** geradas só para produção (passo 2), nunca reutilizadas de dev/test e fora do Git.
-- [ ] **CORS** restrito ao domínio final da Vercel (passo 5). Nunca use `*`.
+- [ ] **Chaves JWT de produção** geradas só para produção (passo 2), nunca reutilizadas de dev/test e fora do Git. **Ainda há cópias de `jwt-privada.pem` e `jwt-publica.pem` na raiz do projeto local:** guarde a privada num cofre e apague as duas.
+- [x] **CORS** restrito ao domínio final da Vercel (passo 5). Nunca use `*`. *Conferido em 30/10.*
+- [x] **Buckets do Storage privados**, com a política restritiva, e **RLS ligado** em todas as tabelas de `public`. *Conferido em 30/10.*
 - [ ] Senha do banco forte e única. Ative 2FA nas contas do Supabase, Render, Vercel e GitHub.
-- [ ] Criar contas individuais para cada pessoa (nada de usuário compartilhado) e deixar **no mínimo dois admins** ativos.
+- [ ] **Troque a senha do banco** se ela tiver circulado fora do gerenciador de senhas (chat, e-mail, print): *Supabase → Project Settings → Database → Reset database password*, e depois atualize `DB_PASSWORD` no Render.
+- [ ] **O repositório é público:** nunca versione `.env`, `*.pem`, senhas ou chaves. O `.gitignore` já cobre `.env*` e `*.pem`.
+- [ ] Criar contas individuais para cada pessoa (nada de usuário compartilhado) e deixar **no mínimo dois admins** ativos. **Hoje há só um admin ativo.**
 - [ ] `npm audit` (frontend): **0 vulnerabilidades nas dependências de produção**. Há 2 alertas (1 alto, 1 baixo) no **Vite**, usado só pelo `ng serve` de desenvolvimento. Não rode `ng serve` exposto na rede (`--host 0.0.0.0`) e atualize `@angular/build` quando sair um patch da linha 22.2. *Não* aplique o `npm audit fix --force`, que faz downgrade.
 - [ ] **Service role key do Supabase** só no Render (`SUPABASE_SERVICE_ROLE_KEY`). Confira que ela **não** está na Vercel, no `.env` versionado nem em logs. Ela ignora todas as políticas do Storage e do banco. Se vazar, gere uma nova em *Project Settings → API Keys* e atualize o Render.
 - [ ] *(Recomendado)* Cabeçalho **Content-Security-Policy** na Vercel. Não foi adicionado para não arriscar quebrar o app sem testes no domínio final. Sugestão inicial (inclui o Supabase para upload, download e prévia de imagens): `default-src 'self'; connect-src 'self' https://<backend>.onrender.com https://<ref>.supabase.co; img-src 'self' data: https://<ref>.supabase.co; style-src 'self' 'unsafe-inline'`.
 
 ## 9. Supabase Storage (após o deploy)
+
+> ✅ Concluído: os buckets e a política foram criados, as variáveis foram cadastradas e o upload foi validado em produção.
 
 Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia o arquivo direto ao Storage (upload resumível TUS), com um token de curta duração gerado pelo backend para um caminho definido por ele. O download também usa URLs assinadas de 5 minutos. O backend no Render nunca recebe o binário.
 
@@ -144,7 +176,7 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
    - `STORAGE_BUCKET` = `chamados-anexos` (opcional, é o padrão) e `ARMAZENAMENTO_TIPO` = `supabase` (opcional, é o padrão em produção).
    - Salve. Com `ARMAZENAMENTO_TIPO=supabase` e sem `SUPABASE_URL` ou a service role key, a aplicação **não sobe** e o log explica o motivo.
 5. **Testar o fluxo:** abra um chamado e anexe um arquivo pequeno num acompanhamento. Ele deve chegar a "Enviado", aparecer no card depois de publicar e baixar pelo botão **Baixar**. Confira o objeto em *Storage → chamados-anexos*.
-   - **Ponto a validar no primeiro uso:** o endpoint do upload TUS assinado (`/storage/v1/upload/resumable/sign`, com o token no header `x-signature`) segue o exemplo oficial do Supabase, mas não pôde ser testado contra um projeto real. Se o envio falhar com 404 ou 401 logo no início, confira o log do navegador. O caminho pode ser ajustado **sem mudar código**, pela propriedade `supabase.storage.tus-path` (ex.: com a variável de ambiente `SUPABASE_STORAGE_TUS_PATH=/storage/v1/upload/resumable`).
+   - **Validado em produção:** o upload TUS assinado (`/storage/v1/upload/resumable/sign`, com o token no header `x-signature`) funciona contra o Supabase real. Em 30/10 havia anexos `CONCLUIDO` no banco, com os objetos correspondentes em `chamados-anexos`. Se um dia o envio falhar com 404 ou 401 logo no início, confira o log do navegador. O caminho pode ser ajustado **sem mudar código**, pela propriedade `supabase.storage.tus-path` (ex.: com a variável de ambiente `SUPABASE_STORAGE_TUS_PATH=/storage/v1/upload/resumable`).
 6. **CORS do Storage:** a API do Supabase Storage já responde com CORS liberado, e o upload e o download funcionam a partir de qualquer origem com token válido. Normalmente **não há nada a configurar**. Se o navegador acusar erro de CORS no upload (aba *Console*), libere o domínio da Vercel nas configurações de CORS/API do projeto Supabase, se a opção existir no seu plano, e teste de novo.
 7. **Custos.** Acompanhe em *Project Settings → Usage*: **armazenamento** (GB guardados) e **egress** (GB baixados; cada download e cada prévia de imagem conta). O plano Free tem cotas pequenas para os dois. Ao crescer, considere o plano Pro, limites de tamanho e uma rotina de arquivamento de anexos antigos.
 8. **Limpeza automática:** anexos que ficaram *pendentes* (upload abandonado) e rascunhos de acompanhamento com mais de **24h** são removidos de hora em hora pelo backend, inclusive no Storage. Não é preciso configurar nada.
@@ -169,13 +201,13 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 ## 11. Problemas conhecidos e decisões que merecem revisão
 
 - **Testes:** todos passando. Backend: **106** (`./mvnw test`). Frontend: **99** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
-- **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. **O upload TUS contra um Supabase real não foi testado** (não havia projeto disponível): veja o passo 9.5. O contrato com a API REST do Storage tem testes contra um servidor falso.
+- **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. Na época, o upload TUS contra um Supabase real não pôde ser testado. **Ele já foi validado em produção** (passo 9.5). O contrato com a API REST do Storage também tem testes contra um servidor falso.
 - **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage.
 - **Armazenamento `local`** é só para desenvolvimento: no Render o disco é efêmero e os arquivos somem a cada deploy. Em produção use sempre `supabase`, que já é o padrão.
 - **"Mostrar itens anteriores" no feed** pagina a partir do mais recente. Se alguém publicar enquanto você navega por páginas antigas, um item pode aparecer repetido ou ser pulado até recarregar a página.
 - **Datas relativas** ("há 5 minutos") são calculadas na renderização e não se atualizam sozinhas com a página parada.
 - **Verificação ponta a ponta (manual, local):** login como admin, criar projeto, criar dev, criar chamados (com responsável, "eu mesmo" e posição), filtros e busca, detalhe com edição, status, "atribuir a mim", histórico, aviso de conflito 409, reordenação pelos botões, dashboard, troca e restauração da paleta, login como dev (sem menus de admin e com `/admin` bloqueado), e layout em 390px sem rolagem horizontal. Foram encontrados e corrigidos 3 problemas visuais. **Não deu para verificar o arrastar-e-soltar com o mouse:** a automação do navegador não conseguia enviar cliques à página nessa sessão, então a fila foi testada pelos botões subir/descer e por testes unitários. Teste o arrasto manualmente uma vez.
-- **Render Free hiberna** depois de ~15 min sem tráfego, e a subida a frio leva ~55 s. Mitigado pelo ping periódico (seção 12). Se a instância ainda estiver dormindo, o app mostra o splash e a tela de carregamento com o aviso "O servidor pode estar acordando". Para garantia total, use uma instância paga.
+- **Render Free hiberna** depois de ~15 min sem tráfego, e a subida a frio leva ~55 s. O ping periódico (seção 12) ainda **não** resolve sozinho: em 30/10 a primeira resposta levou ~75 s. Se a instância ainda estiver dormindo, o app mostra o splash e a tela de carregamento com o aviso "O servidor pode estar acordando". Para garantia total, use uma instância paga.
 - **Sessão em `sessionStorage`:** fechar a aba desloga. É mais seguro, mas pode incomodar. Trocar para `localStorage` em `core/auth/auth.service.ts` é uma linha, ao custo de manter o token entre abas.
 - **Cores de status nos gráficos e badges** (azul, âmbar, verde-água) foram validadas para legibilidade e daltonismo sobre o **fundo escuro padrão**. Se o admin escolher uma paleta clara, elas continuam visíveis, mas não foram revalidadas. A tela de configurações avisa apenas sobre o contraste de texto e destaque.
 - **Qualquer usuário autenticado pode editar qualquer chamado.** Foi uma decisão da Parte 1 (ferramenta de equipe). Se só o criador, o responsável ou o admin deveriam editar, é preciso uma regra no backend.
@@ -189,9 +221,9 @@ O Render gratuito "dorme" depois de ~15 min sem requisições, e a primeira requ
 **Já configurado no repositório:** o workflow [`.github/workflows/manter-acordado.yml`](.github/workflows/manter-acordado.yml) faz esse ping a cada 10 min, com 3 tentativas de 90 s para cobrir a subida a frio. Não precisa de secret nem de conta nova.
 - Para conferir: *GitHub → Actions → "Manter backend acordado"*. Execuções verdes indicam que o backend respondeu 200. Dá para rodar na hora em **Run workflow**.
 - Se a URL do backend mudar: *Settings → Secrets and variables → Actions → Variables → New repository variable* `BACKEND_HEALTH_URL` com a nova URL, sem editar o arquivo.
-- **Limitações do GitHub:** o agendamento é "melhor esforço" e pode atrasar alguns minutos em horários de pico. Ele também é **desativado automaticamente após 60 dias sem commits** no repositório. Se isso acontecer, o GitHub avisa por e-mail; reative em *Actions → Manter backend acordado → Enable workflow*.
+- **Limitações do GitHub:** o agendamento é "melhor esforço". **Na prática, ele está rodando a cada ~5–6 h, não a cada 10 min.** Em 30/10 as execuções foram às 00:20, 06:17, 13:12 e 18:40 (UTC). Todas verdes, mas o Render dorme entre elas. O agendamento também é **desativado automaticamente após 60 dias sem commits** no repositório. Contando do último commit, em 23/10/2026, isso acontece por volta de 22/12/2026. O GitHub avisa por e-mail; reative em *Actions → Manter backend acordado → Enable workflow*.
 
-**Recomendado em conjunto, para garantia extra: UptimeRobot** (gratuito, intervalo mínimo de 5 min no plano Free):
+**Necessário, porque o GitHub sozinho não basta: UptimeRobot** (gratuito, intervalo mínimo de 5 min no plano Free):
 1. Crie uma conta em <https://uptimerobot.com>. Precisa ser feito por você, porque envolve cadastro e senha.
 2. **Add New Monitor** → *Monitor Type*: **HTTP(s)**.
 3. *Friendly Name*: `Chamados backend` · *URL*: `https://chamados-backend-l7vy.onrender.com/q/health` · *Monitoring Interval*: **10 minutes**, ou 5.
