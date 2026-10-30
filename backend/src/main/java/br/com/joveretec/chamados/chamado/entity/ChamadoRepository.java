@@ -6,6 +6,7 @@ import br.com.joveretec.chamados.comum.paginacao.Paginacao;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import io.quarkus.panache.common.Parameters;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.hibernate.Hibernate;
 
 import java.time.Instant;
 import java.util.List;
@@ -14,12 +15,16 @@ import java.util.Optional;
 @ApplicationScoped
 public class ChamadoRepository implements PanacheRepository<Chamado> {
 
-    private static final String DE_CHAMADO_COM_RELACOES =
-            "from Chamado c join fetch c.projeto left join fetch c.responsavel ";
+    private static final String DE_CHAMADO_COM_RELACOES = "from Chamado c join fetch c.projeto ";
 
-    /** Busca o chamado já com projeto, responsável e autor carregados (uma única consulta). */
+    /** Condição "o usuário :parametro é um dos responsáveis do chamado c". */
+    public static String temResponsavel(String parametro) {
+        return "exists (select 1 from c.responsaveis resp where resp.id = :" + parametro + ")";
+    }
+
+    /** Busca o chamado já com projeto, autor e responsáveis carregados (uma única consulta). */
     public Optional<Chamado> buscarCompleto(Long id) {
-        return find(DE_CHAMADO_COM_RELACOES + "join fetch c.criadoPor where c.id = ?1", id)
+        return find(DE_CHAMADO_COM_RELACOES + "join fetch c.criadoPor left join fetch c.responsaveis where c.id = ?1", id)
                 .firstResultOptional();
     }
 
@@ -29,8 +34,18 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
                 condicoes.parametros())
                 .page(paginacao.pagina(), paginacao.tamanho())
                 .list();
+        carregarResponsaveis(itens);
         long total = count("from Chamado c where " + condicoes.where(), condicoes.parametros());
         return Pagina.de(itens, total, paginacao);
+    }
+
+    /**
+     * Os responsáveis (coleção) ficam fora do join fetch da listagem para a paginação continuar
+     * no banco. Tocar a coleção do primeiro carrega a de todos da página numa única consulta
+     * (@BatchSize), ainda com a sessão aberta.
+     */
+    private static void carregarResponsaveis(List<Chamado> chamados) {
+        chamados.forEach(c -> Hibernate.initialize(c.responsaveisParaCarga()));
     }
 
     public int proximaPosicao(Long projetoId) {
@@ -54,6 +69,7 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
     /** Relê o chamado do banco (usado após bloquear o projeto, para obter a posição atual). */
     public void recarregar(Chamado chamado) {
         getEntityManager().refresh(chamado);
+        Hibernate.initialize(chamado.responsaveisParaCarga()); // o refresh descarta a coleção carregada
     }
 
     public List<ContagemPorStatus> contarPorStatus(FiltroChamados filtro) {
@@ -70,7 +86,7 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
         return agregar("select new " + ContagemPorResponsavel.class.getName()
                         + "(r.id, r.nome, c.status, count(c))",
                 "group by r.id, r.nome, c.status order by r.nome, r.id", filtro, ContagemPorResponsavel.class,
-                "join c.responsavel r ");
+                "join c.responsaveis r ");
     }
 
     private <T> List<T> agregar(String select, String agrupamento, FiltroChamados filtro, Class<T> tipo) {
@@ -89,8 +105,8 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
     private CondicoesConsulta condicoesDo(FiltroChamados filtro) {
         return new CondicoesConsulta()
                 .igual("c.projeto.id = :projetoId", "projetoId", filtro.projetoId())
-                .igual("c.responsavel.id = :responsavelId", "responsavelId", filtro.responsavelId())
-                .se(filtro.semResponsavel(), "c.responsavel is null")
+                .igual(temResponsavel("responsavelId"), "responsavelId", filtro.responsavelId())
+                .se(filtro.semResponsavel(), "c.responsaveis is empty")
                 .em("c.status in :status", "status", filtro.status())
                 .em("c.urgencia in :urgencias", "urgencias", filtro.urgencias())
                 .contem("(lower(c.titulo) like :busca or lower(c.descricao) like :busca)", "busca", filtro.busca());

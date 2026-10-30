@@ -40,7 +40,7 @@ public class AcompanhamentoRepository implements PanacheRepository<Acompanhament
     public List<Acompanhamento> ultimosDosChamadosDoUsuario(Long usuarioId, int limite) {
         return find("from Acompanhamento a join fetch a.autor join fetch a.chamado c"
                         + " where a.situacao = :publicado"
-                        + " and (c.responsavel.id = :usuarioId or c.criadoPor.id = :usuarioId)"
+                        + " and (" + ChamadoRepository.temResponsavel("usuarioId") + " or c.criadoPor.id = :usuarioId)"
                         + " order by a.criadoEm desc, a.id desc",
                 Parameters.with("publicado", Situacao.PUBLICADO).and("usuarioId", usuarioId))
                 .page(0, limite)

@@ -81,3 +81,22 @@ h1 {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A lista de responsáveis ocupa a largura toda do cartão, para os nomes não quebrarem. */
+.info .linha-inteira {
+  grid-column: 1 / -1;
+}
+
+.info dd.linha-inteira {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: -4px;
+  overflow-wrap: normal;
+}
+
+.pessoa {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

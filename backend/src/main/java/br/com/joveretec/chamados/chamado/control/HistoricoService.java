@@ -9,6 +9,7 @@ import br.com.joveretec.chamados.comum.paginacao.Paginacao;
 import br.com.joveretec.chamados.usuario.entity.Usuario;
 import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,6 +30,22 @@ public class HistoricoService {
     public void registrarSeAlterado(Chamado chamado, Usuario autor, CampoHistorico campo, Object antes, Object depois) {
         if (!Objects.equals(identidade(antes), identidade(depois))) {
             historicos.persist(new HistoricoChamado(chamado, autor, campo, texto(antes), texto(depois)));
+        }
+    }
+
+    /** Um registro por responsável que entrou ou saiu (comparação pelo id). */
+    public void registrarResponsaveis(Chamado chamado, Usuario autor, List<Usuario> antes, Collection<Usuario> depois) {
+        for (Usuario removido : antes) {
+            if (depois.stream().noneMatch(u -> u.getId().equals(removido.getId()))) {
+                historicos.persist(new HistoricoChamado(chamado, autor, CampoHistorico.RESPONSAVEL_REMOVIDO,
+                        removido.getNome(), null));
+            }
+        }
+        for (Usuario adicionado : depois) {
+            if (antes.stream().noneMatch(u -> u.getId().equals(adicionado.getId()))) {
+                historicos.persist(new HistoricoChamado(chamado, autor, CampoHistorico.RESPONSAVEL_ADICIONADO,
+                        null, adicionado.getNome()));
+            }
         }
     }
 

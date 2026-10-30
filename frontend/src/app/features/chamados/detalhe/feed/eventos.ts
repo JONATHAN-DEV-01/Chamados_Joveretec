@@ -13,6 +13,10 @@ export function descreverEvento({ campo, valorAnterior: antes, valorNovo: depois
       if (!antes) return `atribuiu o chamado a ${depois}`;
       if (!depois) return `removeu o responsável (${antes})`;
       return `mudou o responsável de ${antes} para ${depois}`;
+    case 'RESPONSAVEL_ADICIONADO':
+      return `adicionou ${depois} como responsável`;
+    case 'RESPONSAVEL_REMOVIDO':
+      return `removeu ${antes} dos responsáveis`;
     case 'POSICAO':
       return `moveu o chamado na fila de #${antes} para #${depois}`;
     case 'TITULO':

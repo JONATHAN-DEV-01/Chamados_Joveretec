@@ -10,6 +10,8 @@ export type CampoHistorico =
   | 'URGENCIA'
   | 'STATUS'
   | 'RESPONSAVEL'
+  | 'RESPONSAVEL_ADICIONADO'
+  | 'RESPONSAVEL_REMOVIDO'
   | 'POSICAO'
   | 'ANEXO_ADICIONADO'
   | 'ANEXO_REMOVIDO';
@@ -25,7 +27,8 @@ export interface ChamadoResumo {
   status: StatusChamado;
   posicao: number;
   projeto: Referencia;
-  responsavel: Referencia | null;
+  /** Em ordem alfabética; vazio = sem responsável. */
+  responsaveis: Referencia[];
   atualizadoEm: string;
   /** Inclui acompanhamentos e anexos (atualizadoEm cobre só os dados do chamado). */
   ultimaAtividadeEm: string;
@@ -63,7 +66,7 @@ export interface CriarChamadoRequest {
   titulo: string;
   descricao: string;
   urgencia: Urgencia;
-  responsavelId: number | null;
+  responsavelIds: number[];
   posicao: number | null;
 }
 
@@ -71,6 +74,6 @@ export interface AtualizarChamadoRequest {
   titulo: string;
   descricao: string;
   urgencia: Urgencia;
-  responsavelId: number | null;
+  responsavelIds: number[];
   versao: number;
 }

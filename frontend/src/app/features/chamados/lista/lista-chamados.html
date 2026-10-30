@@ -90,7 +90,7 @@
           <th scope="col">Urgência</th>
           <th scope="col">Título</th>
           <th scope="col">Projeto</th>
-          <th scope="col">Responsável</th>
+          <th scope="col">Responsáveis</th>
           <th scope="col">Status</th>
           <th scope="col" title="Posição na fila do projeto">Fila</th>
           <th scope="col" title="Inclui acompanhamentos e anexos">Última atividade</th>
@@ -103,13 +103,7 @@
             <td><app-badge-urgencia [urgencia]="chamado.urgencia" /></td>
             <td class="titulo"><a [routerLink]="['/chamados', chamado.id]">{{ chamado.titulo }}</a></td>
             <td>{{ chamado.projeto.nome }}</td>
-            <td>
-              @if (chamado.responsavel; as responsavel) {
-                {{ responsavel.nome }}
-              } @else {
-                <span class="texto-suave">—</span>
-              }
-            </td>
+            <td class="responsaveis"><app-responsaveis [responsaveis]="chamado.responsaveis" /></td>
             <td><app-badge-status [status]="chamado.status" /></td>
             <td class="texto-suave">#{{ chamado.posicao }}</td>
             <td class="texto-suave data">
@@ -118,7 +112,7 @@
               </time>
             </td>
             <td class="acao">
-              @if (chamado.responsavel?.id !== usuarioLogado()?.id) {
+              @if (!ehResponsavel(chamado)) {
                 <button type="button" class="btn btn-pequeno" (click)="atribuirAMim(chamado)">Atribuir a mim</button>
               }
             </td>

@@ -19,6 +19,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
+import java.util.List;
+import java.util.Set;
+
 @ApplicationScoped
 public class ChamadoService {
 
@@ -67,14 +70,14 @@ public class ChamadoService {
     public Chamado criar(NovoChamado dados, Long autorId) {
         Usuario autor = usuarios.buscarAutor(autorId);
         Projeto projeto = projetos.buscarAtivoParaAlteracao(dados.projetoId());
-        Usuario responsavel = dados.responsavelId() == null ? null : usuarios.buscarResponsavel(dados.responsavelId());
+        List<Usuario> responsaveis = dados.responsavelIds().stream().map(usuarios::buscarResponsavel).toList();
 
         int fimDaFila = chamados.proximaPosicao(projeto.getId());
         int posicao = dados.posicao() == null ? fimDaFila : validarPosicao(dados.posicao(), fimDaFila);
         chamados.deslocarPosicoes(projeto.getId(), posicao, fimDaFila - 1, +1);
 
         Chamado chamado = new Chamado(projeto, dados.titulo(), dados.descricao(), dados.urgencia(),
-                responsavel, autor, posicao);
+                responsaveis, autor, posicao);
         chamados.persist(chamado);
         historico.registrarCriacao(chamado, autor);
         LOG.infof("Chamado id=%d criado no projeto id=%d pelo usuário id=%d.", chamado.getId(), projeto.getId(), autorId);
@@ -89,17 +92,17 @@ public class ChamadoService {
             throw ExcecaoDeNegocio.conflito(
                     "O chamado foi alterado por outra pessoa. Recarregue e tente novamente.");
         }
-        Usuario responsavel = dados.responsavelId() == null ? null : usuarios.buscarResponsavel(dados.responsavelId());
+        List<Usuario> responsaveis = responsaveisDaEdicao(chamado, dados.responsavelIds());
 
         historico.registrarSeAlterado(chamado, autor, CampoHistorico.TITULO, chamado.getTitulo(), dados.titulo().trim());
         historico.registrarSeAlterado(chamado, autor, CampoHistorico.DESCRICAO, chamado.getDescricao(), dados.descricao());
         historico.registrarSeAlterado(chamado, autor, CampoHistorico.URGENCIA, chamado.getUrgencia(), dados.urgencia());
-        historico.registrarSeAlterado(chamado, autor, CampoHistorico.RESPONSAVEL, chamado.getResponsavel(), responsavel);
+        historico.registrarResponsaveis(chamado, autor, chamado.getResponsaveis(), responsaveis);
 
         chamado.alterarTitulo(dados.titulo());
         chamado.alterarDescricao(dados.descricao());
         chamado.alterarUrgencia(dados.urgencia());
-        chamado.atribuirA(responsavel);
+        chamado.definirResponsaveis(responsaveis);
         return chamado;
     }
 
@@ -112,12 +115,15 @@ public class ChamadoService {
         return chamado;
     }
 
+    /** Inclui quem chamou entre os responsáveis, sem tirar os demais (nada muda se já era um deles). */
     @Transactional
     public Chamado atribuirAoAutor(Long id, Long autorId) {
         Usuario autor = usuarios.buscarAutor(autorId);
         Chamado chamado = buscarParaAlteracao(id);
-        historico.registrarSeAlterado(chamado, autor, CampoHistorico.RESPONSAVEL, chamado.getResponsavel(), autor);
-        chamado.atribuirA(autor);
+        List<Usuario> antes = chamado.getResponsaveis();
+        if (chamado.adicionarResponsavel(autor)) {
+            historico.registrarResponsaveis(chamado, autor, antes, chamado.getResponsaveis());
+        }
         return chamado;
     }
 
@@ -148,6 +154,19 @@ public class ChamadoService {
             throw ExcecaoDeNegocio.regraDeNegocio("O projeto está arquivado e não aceita alterações em chamados.");
         }
         return chamado;
+    }
+
+    /**
+     * Quem já era responsável continua aceito mesmo se tiver sido desativado depois (a edição
+     * não o remove à força); quem está entrando precisa estar ativo.
+     */
+    private List<Usuario> responsaveisDaEdicao(Chamado chamado, Set<Long> ids) {
+        return ids.stream()
+                .map(idUsuario -> chamado.getResponsaveis().stream()
+                        .filter(atual -> atual.getId().equals(idUsuario))
+                        .findFirst()
+                        .orElseGet(() -> usuarios.buscarResponsavel(idUsuario)))
+                .toList();
     }
 
     private static int validarPosicao(int posicao, int maxima) {

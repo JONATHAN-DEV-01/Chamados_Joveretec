@@ -17,6 +17,8 @@ describe('descreverEvento', () => {
     expect(descreverEvento(evento('RESPONSAVEL', null, 'Bruno'))).toBe('atribuiu o chamado a Bruno');
     expect(descreverEvento(evento('RESPONSAVEL', 'Bruno', 'Ana'))).toBe('mudou o responsável de Bruno para Ana');
     expect(descreverEvento(evento('RESPONSAVEL', 'Bruno', null))).toBe('removeu o responsável (Bruno)');
+    expect(descreverEvento(evento('RESPONSAVEL_ADICIONADO', null, 'Ana'))).toBe('adicionou Ana como responsável');
+    expect(descreverEvento(evento('RESPONSAVEL_REMOVIDO', 'Bruno', null))).toBe('removeu Bruno dos responsáveis');
   });
 
   it('descreve fila e anexos', () => {

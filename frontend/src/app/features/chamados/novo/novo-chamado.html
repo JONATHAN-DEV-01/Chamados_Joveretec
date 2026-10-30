@@ -17,9 +17,9 @@
     </div>
 
     <div class="campo">
-      <label for="responsavel">Responsável</label>
-      <app-seletor-responsavel
-        [controle]="formulario.controls.responsavelId"
+      <label for="responsaveis">Responsáveis</label>
+      <app-seletor-responsaveis
+        [controle]="formulario.controls.responsavelIds"
         [usuarios]="usuarios()"
         [eu]="usuarioLogado()"
       />

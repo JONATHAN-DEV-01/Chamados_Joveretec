@@ -89,7 +89,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | urgencia_peso | smallint | **coluna gerada** (`CRITICA`=4 … `BAIXA`=1), usada na ordenação e indexável |
 | status | varchar(15) | `ABERTO` \| `EM_ANDAMENTO` \| `CONCLUIDO`, default `ABERTO` |
 | posicao | integer | ≥ 1, posição na fila do projeto |
-| responsavel_id | bigint FK → usuario | opcional (permite chamado sem responsável até alguém "atribuir a si") |
+| responsavel_id | bigint FK → usuario | **obsoleta desde a V4** (substituída por `chamado_responsavel`); será removida numa migration futura |
 | criado_por_id | bigint FK → usuario | not null |
 | versao | bigint | lock otimista (evita sobrescrever edição concorrente → 409) |
 | criado_em / atualizado_em | timestamptz | |
@@ -98,8 +98,19 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 Índices:
 - `(projeto_id, posicao)` — fila do projeto e reordenação
 - `(urgencia_peso DESC, posicao)` — ordenação padrão da listagem
-- `(responsavel_id)`, `(status)`, `(urgencia)` — filtros
+- `(status)`, `(urgencia)` — filtros
 - FKs indexadas
+
+### `chamado_responsavel` (V4)
+Vários responsáveis por chamado; nenhum registro = "sem responsável". A V4 copiou o `responsavel_id` de cada chamado para cá.
+
+| Coluna | Tipo | Regras |
+|---|---|---|
+| chamado_id | bigint FK → chamado | PK composta, `ON DELETE CASCADE` |
+| usuario_id | bigint FK → usuario | PK composta; índice próprio (filtro "Responsável" e dashboard) |
+| atribuido_em | timestamptz | default `now()` |
+
+Entrada e saída de responsáveis ficam no histórico como `RESPONSAVEL_ADICIONADO` / `RESPONSAVEL_REMOVIDO` (o campo antigo `RESPONSAVEL` continua nos registros anteriores à V4).
 
 ### `historico_chamado`
 Uma linha por campo alterado.
@@ -244,7 +255,8 @@ JWT: claims `sub` (id), `upn` (email), `groups` ([perfil]), `name`; expiração 
 ### Chamados
 ```
 ChamadoResumoDTO = { id, titulo, urgencia, status, posicao,
-                     projeto: { id, nome }, responsavel: { id, nome } | null, atualizadoEm, ultimaAtividadeEm }
+                     projeto: { id, nome }, responsaveis: [{ id, nome }] (ordem alfabética),
+                     responsavel: { id, nome } | null (o primeiro; só para clientes antigos), atualizadoEm, ultimaAtividadeEm }
 ChamadoDTO       = ChamadoResumoDTO + { descricao, criadoPor: { id, nome }, criadoEm, tempoGastoTotalMinutos, versao }
 HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome }, alteradoEm }
 ```
@@ -253,10 +265,10 @@ HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome },
 |---|---|---|---|---|
 | GET | `/api/chamados?projetoId&responsavelId&semResponsavel&status&urgencia&busca&ordem&pagina&tamanho` | Autenticado | `status` e `urgencia` aceitam vários valores (`?status=A&status=B` ou `?status=A,B`); `busca` procura em título e descrição (case-insensitive); `ordem` = `URGENCIA` (padrão) ou `POSICAO` | `200 Página<ChamadoResumoDTO>` |
 | GET | `/api/chamados/{id}` | Autenticado | — | `200 ChamadoDTO` |
-| POST | `/api/chamados` | Autenticado | `{ projetoId, titulo, descricao, urgencia, responsavelId?, posicao? }` | `201 ChamadoDTO` |
-| PUT | `/api/chamados/{id}` | Autenticado | `{ titulo, descricao, urgencia, responsavelId?, versao }` | `200 ChamadoDTO` · 409 versão desatualizada |
+| POST | `/api/chamados` | Autenticado | `{ projetoId, titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), posicao? }` | `201 ChamadoDTO` |
+| PUT | `/api/chamados/{id}` | Autenticado | `{ titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), versao }` | `200 ChamadoDTO` · 409 versão desatualizada |
 | PATCH | `/api/chamados/{id}/status` | Autenticado | `{ status }` | `200 ChamadoDTO` |
-| POST | `/api/chamados/{id}/atribuir-a-mim` | Autenticado | — | `200 ChamadoDTO` |
+| POST | `/api/chamados/{id}/atribuir-a-mim` | Autenticado | — (inclui quem chamou entre os responsáveis, sem tirar os demais) | `200 ChamadoDTO` |
 | PUT | `/api/chamados/{id}/posicao` | Autenticado | `{ posicao }` (1..n) | `200 ChamadoDTO` · 422 fora do intervalo |
 | GET | `/api/chamados/{id}/historico?pagina&tamanho` | Autenticado | — | `200 Página<HistoricoDTO>` (mais recente primeiro) |
 
@@ -405,7 +417,7 @@ Além dos testes, a imagem Docker foi validada no perfil `prod` (PostgreSQL 17 e
 - **Autenticação:** `POST /api/auth/login` devolve `token` e `expiraEm`. Enviar `Authorization: Bearer <token>`. Não existe refresh token: em qualquer 401, limpar a sessão e voltar ao login. O perfil vem em `usuario.perfil` (`ADMIN` | `DESENVOLVEDOR`). Use isso para esconder menus, mas o backend é quem garante a permissão (403).
 - **Usuário desativado:** o token continua válido para leitura até expirar (padrão 8h), mas qualquer alteração retorna 403.
 - **Edição de chamado:** `PUT /api/chamados/{id}` exige `versao` (vem no `GET /api/chamados/{id}`). Em 409, avisar "alterado por outra pessoa" e recarregar. Status, "atribuir a mim" e posição têm endpoints próprios e **não** exigem `versao`, mas incrementam a versão: recarregue o chamado antes de abrir o formulário de edição.
-- **Responsável:** enviar `responsavelId: null` remove o responsável no `PUT`. Na criação, autoatribuição = enviar o próprio `id` (de `/api/auth/me`).
+- **Responsáveis:** `responsavelIds` é a lista completa: no `PUT`, quem não estiver nela sai (`[]` = sem responsável). Na criação, autoatribuição = incluir o próprio `id` (de `/api/auth/me`). Quem já era responsável e foi desativado pode continuar na lista; quem entra precisa estar ativo. O filtro `responsavelId` traz os chamados em que a pessoa é **um** dos responsáveis. O campo antigo `responsavelId` (único) ainda é aceito quando `responsavelIds` não vem.
 - **Fila do projeto:** listar com `?projetoId=X&ordem=POSICAO&tamanho=100`. Ao soltar um item, chamar `PUT /api/chamados/{id}/posicao` com a nova posição (1-based) e recarregar a lista.
 - **Paginação:** `pagina` começa em 0; `tamanho` máximo 100. O tamanho padrão sugerido vem de `geral.tamanhoPaginaPadrao` em `/api/configuracoes`.
 - **Paleta:** `GET /api/configuracoes` é público. Aplicar antes do login, por exemplo `--cor-fundo: paleta.fundo`, `--cor-superficie: paleta.superficie`, `--cor-destaque: paleta.destaque`, `--cor-texto: paleta.texto`. As cores voltam sempre em maiúsculas `#RRGGBB`.

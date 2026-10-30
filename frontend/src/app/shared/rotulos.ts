@@ -27,6 +27,8 @@ export const ROTULO_CAMPO_HISTORICO: Record<CampoHistorico, string> = {
   URGENCIA: 'Urgência',
   STATUS: 'Status',
   RESPONSAVEL: 'Responsável',
+  RESPONSAVEL_ADICIONADO: 'Responsável adicionado',
+  RESPONSAVEL_REMOVIDO: 'Responsável removido',
   POSICAO: 'Posição na fila',
   ANEXO_ADICIONADO: 'Anexo adicionado',
   ANEXO_REMOVIDO: 'Anexo removido',

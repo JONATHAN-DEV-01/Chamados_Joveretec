@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, booleanAttribute, computed, input } from '@angular/core';
 import { iniciais } from '../formatos';
 
 /** Círculo com as iniciais do nome. */
 @Component({
   selector: 'app-avatar',
-  template: `<span [attr.title]="nome()" aria-hidden="true">{{ texto() }}</span>`,
+  template: `<span [class.pequeno]="pequeno()" [attr.title]="nome()" aria-hidden="true">{{ texto() }}</span>`,
   styles: `
     :host { display: inline-flex; flex: none; }
     span {
@@ -20,10 +20,16 @@ import { iniciais } from '../formatos';
       font-weight: 700;
       letter-spacing: 0.02em;
     }
+    span.pequeno {
+      width: 26px;
+      height: 26px;
+      font-size: 0.66rem;
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Avatar {
   readonly nome = input.required<string>();
+  readonly pequeno = input(false, { transform: booleanAttribute });
   protected readonly texto = computed(() => iniciais(this.nome()));
 }

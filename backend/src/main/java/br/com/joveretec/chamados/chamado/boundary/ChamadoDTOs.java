@@ -15,8 +15,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 public final class ChamadoDTOs {
+
+    static final int MAXIMO_RESPONSAVEIS = 20;
+    static final String MENSAGEM_MAXIMO_RESPONSAVEIS = "Um chamado pode ter no máximo 20 responsáveis.";
 
     private ChamadoDTOs() {
     }
@@ -31,31 +38,57 @@ public final class ChamadoDTOs {
         static ReferenciaDTO de(Usuario usuario) {
             return usuario == null ? null : new ReferenciaDTO(usuario.getId(), usuario.getNome());
         }
+
+        static List<ReferenciaDTO> de(List<Usuario> usuarios) {
+            return usuarios.stream().map(ReferenciaDTO::de).toList();
+        }
+
+        /** Primeiro da lista: campo {@code responsavel} mantido para clientes da versão anterior. */
+        static ReferenciaDTO primeiro(List<Usuario> usuarios) {
+            return usuarios.isEmpty() ? null : de(usuarios.getFirst());
+        }
+    }
+
+    /**
+     * Junta {@code responsavelIds} (atual) e {@code responsavelId} (versão anterior do frontend,
+     * que pode estar no ar por alguns minutos durante o deploy) em um conjunto sem repetição.
+     */
+    static Set<Long> idsDosResponsaveis(List<Long> responsavelIds, Long responsavelId) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (responsavelIds != null) {
+            responsavelIds.stream().filter(Objects::nonNull).forEach(ids::add);
+        } else if (responsavelId != null) {
+            ids.add(responsavelId);
+        }
+        return ids;
     }
 
     /** {@code ultimaAtividadeEm} inclui acompanhamentos e anexos; {@code atualizadoEm}, só os dados do chamado. */
     public record ChamadoResumoDTO(Long id, String titulo, Urgencia urgencia, StatusChamado status, int posicao,
-                                   ReferenciaDTO projeto, ReferenciaDTO responsavel, Instant atualizadoEm,
-                                   Instant ultimaAtividadeEm) {
+                                   ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
+                                   ReferenciaDTO responsavel, Instant atualizadoEm, Instant ultimaAtividadeEm) {
 
         public static ChamadoResumoDTO de(Chamado chamado) {
+            List<Usuario> responsaveis = chamado.getResponsaveis();
             return new ChamadoResumoDTO(chamado.getId(), chamado.getTitulo(), chamado.getUrgencia(),
                     chamado.getStatus(), chamado.getPosicao(), ReferenciaDTO.de(chamado.getProjeto()),
-                    ReferenciaDTO.de(chamado.getResponsavel()), chamado.getAtualizadoEm(),
+                    ReferenciaDTO.de(responsaveis), ReferenciaDTO.primeiro(responsaveis), chamado.getAtualizadoEm(),
                     chamado.getUltimaAtividadeEm());
         }
     }
 
     public record ChamadoDTO(Long id, String titulo, String descricao, Urgencia urgencia, StatusChamado status,
-                             int posicao, ReferenciaDTO projeto, ReferenciaDTO responsavel, ReferenciaDTO criadoPor,
+                             int posicao, ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
+                             ReferenciaDTO responsavel, ReferenciaDTO criadoPor,
                              Instant criadoEm, Instant atualizadoEm, Instant ultimaAtividadeEm,
                              long tempoGastoTotalMinutos, long versao) {
 
         public static ChamadoDTO de(Chamado chamado, long tempoGastoTotalMinutos) {
+            List<Usuario> responsaveis = chamado.getResponsaveis();
             return new ChamadoDTO(chamado.getId(), chamado.getTitulo(), chamado.getDescricao(),
                     chamado.getUrgencia(), chamado.getStatus(), chamado.getPosicao(),
-                    ReferenciaDTO.de(chamado.getProjeto()), ReferenciaDTO.de(chamado.getResponsavel()),
-                    ReferenciaDTO.de(chamado.getCriadoPor()), chamado.getCriadoEm(), chamado.getAtualizadoEm(),
+                    ReferenciaDTO.de(chamado.getProjeto()), ReferenciaDTO.de(responsaveis),
+                    ReferenciaDTO.primeiro(responsaveis), ReferenciaDTO.de(chamado.getCriadoPor()), chamado.getCriadoEm(), chamado.getAtualizadoEm(),
                     chamado.getUltimaAtividadeEm(), tempoGastoTotalMinutos, chamado.getVersao());
         }
     }
@@ -80,12 +113,15 @@ public final class ChamadoDTOs {
             String descricao,
             @NotNull(message = "A urgência é obrigatória (BAIXA, MEDIA, ALTA ou CRITICA).")
             Urgencia urgencia,
+            @Size(max = MAXIMO_RESPONSAVEIS, message = MENSAGEM_MAXIMO_RESPONSAVEIS)
+            List<Long> responsavelIds,
             Long responsavelId,
             @Min(value = 1, message = "A posição deve ser maior ou igual a 1.")
             Integer posicao) {
 
         NovoChamado paraComando() {
-            return new NovoChamado(projetoId, titulo, descricao, urgencia, responsavelId, posicao);
+            return new NovoChamado(projetoId, titulo, descricao, urgencia,
+                    idsDosResponsaveis(responsavelIds, responsavelId), posicao);
         }
     }
 
@@ -98,12 +134,15 @@ public final class ChamadoDTOs {
             String descricao,
             @NotNull(message = "A urgência é obrigatória (BAIXA, MEDIA, ALTA ou CRITICA).")
             Urgencia urgencia,
+            @Size(max = MAXIMO_RESPONSAVEIS, message = MENSAGEM_MAXIMO_RESPONSAVEIS)
+            List<Long> responsavelIds,
             Long responsavelId,
             @NotNull(message = "A versão é obrigatória (use o valor de 'versao' recebido ao carregar o chamado).")
             Long versao) {
 
         EdicaoChamado paraComando() {
-            return new EdicaoChamado(titulo, descricao, urgencia, responsavelId, versao);
+            return new EdicaoChamado(titulo, descricao, urgencia, idsDosResponsaveis(responsavelIds, responsavelId),
+                    versao);
         }
     }
 

@@ -15,6 +15,7 @@ import static br.com.joveretec.chamados.ApiTeste.criarChamado;
 import static br.com.joveretec.chamados.ApiTeste.criarDesenvolvedor;
 import static br.com.joveretec.chamados.ApiTeste.criarProjeto;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.nullValue;
@@ -119,14 +120,15 @@ class ChamadoResourceTest {
     void atribuirAMimRegistraHistorico() {
         long id = criarChamado(dev.token(), projetoId, "Sem dono", "MEDIA", outroDev.id());
 
+        // Atribuir a mim inclui quem chamou sem tirar o responsável que já estava lá.
         como(dev.token()).post("/api/chamados/{id}/atribuir-a-mim", id)
                 .then().statusCode(200)
-                .body("responsavel.id", equalTo((int) dev.id()));
+                .body("responsaveis.id", containsInAnyOrder((int) dev.id(), (int) outroDev.id()));
 
         como(dev.token()).get("/api/chamados/{id}/historico", id)
                 .then().statusCode(200)
-                .body("itens[0].campo", equalTo("RESPONSAVEL"))
-                .body("itens[0].valorAnterior", equalTo(outroDev.nome()))
+                .body("itens[0].campo", equalTo("RESPONSAVEL_ADICIONADO"))
+                .body("itens[0].valorAnterior", nullValue())
                 .body("itens[0].valorNovo", equalTo(dev.nome()));
     }
 
@@ -169,7 +171,7 @@ class ChamadoResourceTest {
 
         como(dev.token()).get("/api/chamados/{id}/historico", id)
                 .then().body("totalItens", equalTo(4))
-                .body("itens.campo", hasItems("TITULO", "URGENCIA", "RESPONSAVEL", "CRIACAO"));
+                .body("itens.campo", hasItems("TITULO", "URGENCIA", "RESPONSAVEL_ADICIONADO", "CRIACAO"));
     }
 
     @Test

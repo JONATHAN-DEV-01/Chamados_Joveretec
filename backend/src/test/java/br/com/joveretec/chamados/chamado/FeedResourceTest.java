@@ -57,7 +57,7 @@ class FeedResourceTest {
         assertEquals("Comecei a análise", feed.getString("itens[1].acompanhamento.texto"));
         assertEquals("STATUS", feed.getString("itens[2].evento.campo"));
         assertEquals("EM_ANDAMENTO", feed.getString("itens[2].evento.valorNovo"));
-        assertEquals("RESPONSAVEL", feed.getString("itens[4].evento.campo"));
+        assertEquals("RESPONSAVEL_ADICIONADO", feed.getString("itens[4].evento.campo"));
         // O evento CRIACAO do histórico não se repete: a abertura já representa a criação.
         assertFalse(feed.getList("itens.evento.campo").contains("CRIACAO"));
     }

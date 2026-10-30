@@ -8,10 +8,11 @@ import { ChamadoResumo } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { Responsaveis } from '../../../shared/componentes/responsaveis';
 
 @Component({
   selector: 'app-fila-projeto',
-  imports: [RouterLink, CdkDropList, CdkDrag, CdkDragHandle, BadgeUrgencia, BadgeStatus],
+  imports: [RouterLink, CdkDropList, CdkDrag, CdkDragHandle, BadgeUrgencia, BadgeStatus, Responsaveis],
   templateUrl: './fila-projeto.html',
   styleUrl: './fila-projeto.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

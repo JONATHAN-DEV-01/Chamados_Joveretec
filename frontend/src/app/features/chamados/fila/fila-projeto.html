@@ -51,7 +51,7 @@
           <div class="meta">
             <app-badge-urgencia [urgencia]="chamado.urgencia" />
             <app-badge-status [status]="chamado.status" />
-            <span class="texto-suave">{{ chamado.responsavel?.nome ?? 'Sem responsável' }}</span>
+            <app-responsaveis [responsaveis]="chamado.responsaveis" />
           </div>
         </div>
         <div class="setas">

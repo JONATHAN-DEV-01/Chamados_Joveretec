@@ -58,7 +58,7 @@ describe('ChamadoService', () => {
 
   it('envia a versão na edição (lock otimista)', () => {
     servico
-      .editar(10, { titulo: 'T', descricao: 'D', urgencia: 'ALTA', responsavelId: null, versao: 4 })
+      .editar(10, { titulo: 'T', descricao: 'D', urgencia: 'ALTA', responsavelIds: [], versao: 4 })
       .subscribe();
     const requisicao = http.expectOne(`${url}/10`);
     expect(requisicao.request.method).toBe('PUT');

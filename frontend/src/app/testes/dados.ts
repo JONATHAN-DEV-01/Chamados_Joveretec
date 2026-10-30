@@ -30,7 +30,7 @@ export function chamadoResumo(id: number, posicao: number, titulo = `Chamado ${i
     status: 'ABERTO',
     posicao,
     projeto: { id: 1, nome: 'Projeto' },
-    responsavel: null,
+    responsaveis: [],
     atualizadoEm: '2026-10-20T12:00:00Z',
     ultimaAtividadeEm: '2026-10-20T12:00:00Z',
   };

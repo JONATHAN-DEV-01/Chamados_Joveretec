@@ -14,6 +14,7 @@ import { NotificacaoService } from '../../../core/notificacao/notificacao.servic
 import { ATRASO_BUSCA_MS } from '../../../shared/busca-com-atraso';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { Responsaveis } from '../../../shared/componentes/responsaveis';
 import { Paginacao } from '../../../shared/componentes/paginacao';
 import { TempoRelativoPipe } from '../../../shared/formatos';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
@@ -28,6 +29,7 @@ import { ParametrosLista, SEM_RESPONSAVEL, alternar, lerLista, paginaDa, paraFil
     BadgeUrgencia,
     BadgeStatus,
     Paginacao,
+    Responsaveis,
     RotuloStatusPipe,
     RotuloUrgenciaPipe,
     TempoRelativoPipe,
@@ -131,6 +133,10 @@ export class ListaChamados {
       },
       error: (erro: unknown) => this.notificacao.erro(erro),
     });
+  }
+
+  protected ehResponsavel(chamado: ChamadoResumo): boolean {
+    return chamado.responsaveis.some((r) => r.id === this.usuarioLogado()?.id);
   }
 
   protected valorSelect(evento: Event): string | null {

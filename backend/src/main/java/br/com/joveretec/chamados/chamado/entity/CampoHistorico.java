@@ -6,7 +6,10 @@ public enum CampoHistorico {
     DESCRICAO,
     URGENCIA,
     STATUS,
+    /** Responsável único (antes da V4); continua no histórico antigo. */
     RESPONSAVEL,
+    RESPONSAVEL_ADICIONADO,
+    RESPONSAVEL_REMOVIDO,
     POSICAO,
     ANEXO_ADICIONADO,
     ANEXO_REMOVIDO

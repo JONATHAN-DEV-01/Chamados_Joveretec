@@ -16,7 +16,7 @@
         </span>
       </div>
     </div>
-    @if (c.responsavel?.id !== usuarioLogado()?.id && !projetoArquivado()) {
+    @if (!souResponsavel() && !projetoArquivado()) {
       <button type="button" class="btn" (click)="atribuirAMim()">Atribuir a mim</button>
     }
   </header>
@@ -74,12 +74,12 @@
             </select>
           </div>
           <div class="campo">
-            <label for="responsavel">Responsável</label>
-            <app-seletor-responsavel
-              [controle]="formulario.controls.responsavelId"
+            <label for="responsaveis">Responsáveis</label>
+            <app-seletor-responsaveis
+              [controle]="formulario.controls.responsavelIds"
               [usuarios]="usuarios()"
               [eu]="usuarioLogado()"
-              [atual]="c.responsavel"
+              [atuais]="c.responsaveis"
             />
           </div>
         </div>
@@ -110,6 +110,14 @@
         <dl>
           <dt class="rotulo">Projeto</dt>
           <dd>{{ c.projeto.nome }}</dd>
+          <dt class="rotulo linha-inteira">{{ c.responsaveis.length > 1 ? 'Responsáveis' : 'Responsável' }}</dt>
+          <dd class="linha-inteira">
+            @for (pessoa of c.responsaveis; track pessoa.id) {
+              <span class="pessoa"><app-avatar [nome]="pessoa.nome" pequeno />{{ pessoa.nome }}</span>
+            } @empty {
+              <span class="texto-suave">Sem responsável</span>
+            }
+          </dd>
           <dt class="rotulo">Posição na fila</dt>
           <dd>
             #{{ c.posicao }}

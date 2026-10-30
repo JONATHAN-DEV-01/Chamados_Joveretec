@@ -11,15 +11,23 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "chamado")
@@ -54,9 +62,14 @@ public class Chamado {
     @Column(nullable = false)
     private int posicao;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "responsavel_id")
-    private Usuario responsavel;
+    /** Nenhum responsável = "sem responsável". Carregados em lote nas listagens (sem N+1). */
+    @ManyToMany
+    @JoinTable(name = "chamado_responsavel",
+            joinColumns = @JoinColumn(name = "chamado_id"),
+            inverseJoinColumns = @JoinColumn(name = "usuario_id"))
+    @OrderBy("nome asc, id asc")
+    @BatchSize(size = 100)
+    private Set<Usuario> responsaveis = new LinkedHashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "criado_por_id", nullable = false, updatable = false)
@@ -85,12 +98,12 @@ public class Chamado {
     }
 
     public Chamado(Projeto projeto, String titulo, String descricao, Urgencia urgencia,
-                   Usuario responsavel, Usuario criadoPor, int posicao) {
+                   Collection<Usuario> responsaveis, Usuario criadoPor, int posicao) {
         this.projeto = projeto;
         this.titulo = titulo.trim();
         this.descricao = descricao;
         this.urgencia = urgencia;
-        this.responsavel = responsavel;
+        this.responsaveis.addAll(responsaveis);
         this.criadoPor = criadoPor;
         this.posicao = posicao;
     }
@@ -117,8 +130,19 @@ public class Chamado {
         this.status = status;
     }
 
-    public void atribuirA(Usuario responsavel) {
-        this.responsavel = responsavel;
+    /** Troca os responsáveis pelos informados (altera a versão do chamado, como qualquer edição). */
+    public void definirResponsaveis(Collection<Usuario> novos) {
+        responsaveis.removeIf(atual -> novos.stream().noneMatch(n -> n.getId().equals(atual.getId())));
+        novos.forEach(this::adicionarResponsavel);
+    }
+
+    /** Inclui o usuário entre os responsáveis; retorna {@code false} se ele já era um deles. */
+    public boolean adicionarResponsavel(Usuario usuario) {
+        return responsaveis.stream().noneMatch(r -> r.getId().equals(usuario.getId())) && responsaveis.add(usuario);
+    }
+
+    public boolean temResponsavel(Long usuarioId) {
+        return responsaveis.stream().anyMatch(r -> r.getId().equals(usuarioId));
     }
 
     public void moverParaPosicao(int posicao) {
@@ -153,8 +177,14 @@ public class Chamado {
         return posicao;
     }
 
-    public Usuario getResponsavel() {
-        return responsavel;
+    /** Coleção gerenciada, só para o repositório inicializá-la em lote. */
+    Set<Usuario> responsaveisParaCarga() {
+        return responsaveis;
+    }
+
+    /** Responsáveis em ordem alfabética. */
+    public List<Usuario> getResponsaveis() {
+        return List.copyOf(responsaveis);
     }
 
     public Usuario getCriadoPor() {

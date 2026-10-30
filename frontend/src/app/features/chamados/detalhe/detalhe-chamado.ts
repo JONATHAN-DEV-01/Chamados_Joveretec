@@ -17,7 +17,8 @@ import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
 import { DuracaoPipe } from '../../../shared/formatos';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
-import { SeletorResponsavel } from '../seletor-responsavel';
+import { Avatar } from '../../../shared/componentes/avatar';
+import { SeletorResponsaveis } from '../seletor-responsaveis';
 import { FeedChamado } from './feed/feed-chamado';
 
 @Component({
@@ -31,7 +32,8 @@ import { FeedChamado } from './feed/feed-chamado';
     BadgeStatus,
     RotuloStatusPipe,
     RotuloUrgenciaPipe,
-    SeletorResponsavel,
+    SeletorResponsaveis,
+    Avatar,
     FeedChamado,
     DuracaoPipe,
   ],
@@ -67,6 +69,12 @@ export class DetalheChamado {
     ),
   );
 
+  /** "Atribuir a mim" só aparece para quem ainda não é um dos responsáveis. */
+  protected readonly souResponsavel = computed(() => {
+    const eu = this.usuarioLogado()?.id;
+    return !!this.chamado()?.responsaveis.some((r) => r.id === eu);
+  });
+
   protected readonly salvando = signal(false);
   protected readonly conflito = signal(false);
 
@@ -74,7 +82,7 @@ export class DetalheChamado {
     titulo: ['', [Validators.required, Validators.maxLength(200)]],
     descricao: ['', [Validators.required, Validators.maxLength(20000)]],
     urgencia: ['MEDIA' as Urgencia, Validators.required],
-    responsavelId: [''],
+    responsavelIds: [[] as number[]],
   });
 
   constructor() {
@@ -101,7 +109,7 @@ export class DetalheChamado {
         titulo: valor.titulo.trim(),
         descricao: valor.descricao,
         urgencia: valor.urgencia,
-        responsavelId: valor.responsavelId ? Number(valor.responsavelId) : null,
+        responsavelIds: valor.responsavelIds,
         versao: chamado.versao,
       })
       .subscribe({
@@ -174,7 +182,7 @@ export class DetalheChamado {
       titulo: chamado.titulo,
       descricao: chamado.descricao,
       urgencia: chamado.urgencia,
-      responsavelId: chamado.responsavel ? String(chamado.responsavel.id) : '',
+      responsavelIds: chamado.responsaveis.map((r) => r.id),
     });
   }
 }

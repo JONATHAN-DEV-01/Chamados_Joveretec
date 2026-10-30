@@ -15,11 +15,11 @@ import { AreaDeAnexos } from '../../../shared/componentes/area-de-anexos';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
 import { RotuloUrgenciaPipe } from '../../../shared/rotulos';
-import { SeletorResponsavel } from '../seletor-responsavel';
+import { SeletorResponsaveis } from '../seletor-responsaveis';
 
 @Component({
   selector: 'app-novo-chamado',
-  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsavel, AreaDeAnexos],
+  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsaveis, AreaDeAnexos],
   templateUrl: './novo-chamado.html',
   styleUrl: './novo-chamado.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,7 +47,7 @@ export class NovoChamado implements OnInit {
     titulo: ['', [Validators.required, Validators.maxLength(200)]],
     descricao: ['', [Validators.required, Validators.maxLength(20000)]],
     urgencia: ['MEDIA' as Urgencia, Validators.required],
-    responsavelId: [''],
+    responsavelIds: [[] as number[]],
     posicao: [''],
   });
 
@@ -91,7 +91,7 @@ export class NovoChamado implements OnInit {
         titulo: valor.titulo.trim(),
         descricao: valor.descricao,
         urgencia: valor.urgencia,
-        responsavelId: valor.responsavelId ? Number(valor.responsavelId) : null,
+        responsavelIds: valor.responsavelIds,
         posicao: valor.posicao ? Number(valor.posicao) : null,
       })
       .subscribe({
