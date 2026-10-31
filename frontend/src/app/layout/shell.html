@@ -25,7 +25,18 @@
       </ul>
     </nav>
   }
+
+  <div class="rodape-lateral">
+    <button type="button" class="link-novidades" (click)="abrirNovidades()">
+      Novidades
+      @if (novidades.pendentes()) {
+        <span class="ponto" aria-label="(há novidades que você ainda não viu)"></span>
+      }
+    </button>
+  </div>
 </aside>
+
+<app-novidades-dialogo />
 
 <div class="principal">
   <header class="topo">

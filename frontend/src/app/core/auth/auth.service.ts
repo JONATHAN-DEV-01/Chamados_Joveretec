@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, map, tap } from 'rxjs';
+import { Observable, catchError, map, of, tap } from 'rxjs';
 import { urlApi } from '../api/parametros';
 import { Paleta } from '../models/configuracao';
 import { LoginResponse, Usuario } from '../models/usuario';
@@ -62,6 +62,22 @@ export class AuthService {
   /** Remove a paleta pessoal: volta a seguir a paleta do sistema. */
   restaurarPaleta(): Observable<void> {
     return this.http.delete<void>(urlApi('/auth/me/paleta')).pipe(tap(() => this.trocarPaleta(null)));
+  }
+
+  /**
+   * Registra que o usuário viu as novidades até `versao`: na sessão na hora (o pop-up não volta
+   * nesta aba) e no servidor em seguida. Uma falha no servidor só faz o pop-up reaparecer no
+   * próximo login, então não é tratada como erro.
+   */
+  marcarNovidadesVistas(versao: number): Observable<void> {
+    const usuario = this.usuario();
+    if (usuario) {
+      this.atualizarUsuario({ ...usuario, novidadesVistasVersao: Math.max(versao, usuario.novidadesVistasVersao ?? 0) });
+    }
+    return this.http.put<unknown>(urlApi('/auth/me/novidades'), { versao }).pipe(
+      map(() => undefined),
+      catchError(() => of(undefined)),
+    );
   }
 
   alterarSenha(senhaAtual: string, novaSenha: string): Observable<void> {

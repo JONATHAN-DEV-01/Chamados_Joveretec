@@ -34,6 +34,38 @@
   content: '';
 }
 
+.rodape-lateral {
+  margin-top: auto;
+  padding: 12px 10px 0;
+  border-top: 1px solid var(--cor-borda);
+}
+
+.link-novidades {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--cor-texto-suave);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.link-novidades:hover,
+.link-novidades:focus-visible {
+  color: var(--cor-texto);
+  text-decoration: underline;
+}
+
+.ponto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cor-destaque);
+}
+
 nav ul {
   display: flex;
   flex-direction: column;

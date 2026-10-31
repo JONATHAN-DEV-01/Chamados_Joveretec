@@ -55,6 +55,10 @@ public class Usuario {
     @Column(name = "paleta_texto", length = 7)
     private String paletaTexto;
 
+    /** Última versão das "Novidades da plataforma" que o usuário já viu (0 = nenhuma). */
+    @Column(name = "novidades_vistas_versao", nullable = false)
+    private int novidadesVistasVersao;
+
     @UpdateTimestamp
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
@@ -101,6 +105,15 @@ public class Usuario {
     public Optional<PaletaPessoal> getPaleta() {
         return paletaFundo == null ? Optional.empty()
                 : Optional.of(new PaletaPessoal(paletaFundo, paletaSuperficie, paletaDestaque, paletaTexto));
+    }
+
+    /** Só avança: reabrir novidades antigas não faz as mais novas aparecerem de novo. */
+    public void marcarNovidadesVistas(int versao) {
+        novidadesVistasVersao = Math.max(novidadesVistasVersao, versao);
+    }
+
+    public int getNovidadesVistasVersao() {
+        return novidadesVistasVersao;
     }
 
     public void desativar() {

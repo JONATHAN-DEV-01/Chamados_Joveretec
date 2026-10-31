@@ -3,6 +3,8 @@ package br.com.joveretec.chamados.auth.boundary;
 import br.com.joveretec.chamados.auth.boundary.AuthDTOs.AlterarSenhaRequest;
 import br.com.joveretec.chamados.auth.boundary.AuthDTOs.LoginRequest;
 import br.com.joveretec.chamados.auth.boundary.AuthDTOs.LoginResponse;
+import br.com.joveretec.chamados.auth.boundary.AuthDTOs.NovidadesVistasDTO;
+import br.com.joveretec.chamados.auth.boundary.AuthDTOs.NovidadesVistasRequest;
 import br.com.joveretec.chamados.auth.boundary.AuthDTOs.UsuarioLogadoDTO;
 import br.com.joveretec.chamados.auth.control.AutenticacaoService;
 import br.com.joveretec.chamados.comum.seguranca.UsuarioLogado;
@@ -52,6 +54,15 @@ public class AuthResource {
     @RolesAllowed({Perfil.ROLE_ADMIN, Perfil.ROLE_DESENVOLVEDOR})
     public PaletaDTO definirPaleta(@Valid @NotNull(message = "O corpo da requisição é obrigatório.") PaletaDTO paleta) {
         return AuthDTOs.paleta(usuarios.definirPropriaPaleta(usuarioLogado.id(), AuthDTOs.paleta(paleta)));
+    }
+
+    /** Marca as "Novidades da plataforma" como vistas até a versão informada (nunca volta atrás). */
+    @PUT
+    @Path("/me/novidades")
+    @RolesAllowed({Perfil.ROLE_ADMIN, Perfil.ROLE_DESENVOLVEDOR})
+    public NovidadesVistasDTO marcarNovidadesVistas(
+            @Valid @NotNull(message = "O corpo da requisição é obrigatório.") NovidadesVistasRequest requisicao) {
+        return new NovidadesVistasDTO(usuarios.marcarNovidadesVistas(usuarioLogado.id(), requisicao.versao()));
     }
 
     /** Volta a seguir a paleta global do sistema. */

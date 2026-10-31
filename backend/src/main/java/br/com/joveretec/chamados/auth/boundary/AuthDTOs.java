@@ -7,7 +7,10 @@ import br.com.joveretec.chamados.usuario.entity.PaletaPessoal;
 import br.com.joveretec.chamados.usuario.entity.Perfil;
 import br.com.joveretec.chamados.usuario.entity.Usuario;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
@@ -42,15 +45,27 @@ public final class AuthDTOs {
 
     /**
      * O próprio usuário: os campos de {@link UsuarioDTO} mais a paleta pessoal, que só ele vê
-     * ({@code null} = segue a paleta global do sistema).
+     * ({@code null} = segue a paleta global do sistema), e a última versão das novidades que ele viu.
      */
     public record UsuarioLogadoDTO(Long id, String nome, String email, Perfil perfil, boolean ativo, Instant criadoEm,
-                                   PaletaDTO paleta) {
+                                   PaletaDTO paleta, int novidadesVistasVersao) {
 
         static UsuarioLogadoDTO de(Usuario usuario) {
             return new UsuarioLogadoDTO(usuario.getId(), usuario.getNome(), usuario.getEmail(), usuario.getPerfil(),
-                    usuario.isAtivo(), usuario.getCriadoEm(), usuario.getPaleta().map(AuthDTOs::paleta).orElse(null));
+                    usuario.isAtivo(), usuario.getCriadoEm(), usuario.getPaleta().map(AuthDTOs::paleta).orElse(null),
+                    usuario.getNovidadesVistasVersao());
         }
+    }
+
+    /** Versão das "Novidades da plataforma" que o usuário acabou de ver. */
+    public record NovidadesVistasRequest(
+            @NotNull(message = "A versão é obrigatória.")
+            @Min(value = 1, message = "A versão deve ser maior ou igual a 1.")
+            @Max(value = 100000, message = "Versão inválida.")
+            Integer versao) {
+    }
+
+    public record NovidadesVistasDTO(int versao) {
     }
 
     static PaletaDTO paleta(PaletaPessoal paleta) {

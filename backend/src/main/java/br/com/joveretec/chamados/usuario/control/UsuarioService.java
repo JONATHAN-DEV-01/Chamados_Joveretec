@@ -112,6 +112,13 @@ public class UsuarioService {
     }
 
     @Transactional
+    public int marcarNovidadesVistas(Long usuarioId, int versao) {
+        Usuario usuario = buscarAutor(usuarioId);
+        usuario.marcarNovidadesVistas(versao);
+        return usuario.getNovidadesVistasVersao();
+    }
+
+    @Transactional
     public void alterarPropriaSenha(Long usuarioId, String senhaAtual, String novaSenha) {
         Usuario usuario = buscarAutor(usuarioId);
         if (!hashDeSenha.confere(senhaAtual, usuario.getSenhaHash())) {

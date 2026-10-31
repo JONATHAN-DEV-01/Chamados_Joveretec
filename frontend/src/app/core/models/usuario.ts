@@ -10,6 +10,8 @@ export interface Usuario {
   criadoEm: string;
   /** Paleta pessoal: só vem para o próprio usuário (login e `/me`); `null` = segue a global. */
   paleta?: Paleta | null;
+  /** Última versão das "Novidades da plataforma" que o usuário viu (login e `/me`). */
+  novidadesVistasVersao?: number;
 }
 
 export interface LoginResponse {

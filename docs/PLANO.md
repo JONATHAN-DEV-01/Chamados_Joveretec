@@ -67,6 +67,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | senha_hash | varchar(100) | not null, BCrypt |
 | perfil | varchar(20) | `ADMIN` \| `DESENVOLVEDOR` |
 | ativo | boolean | default true |
+| novidades_vistas_versao | integer | default 0 (V10): última versão das "Novidades da plataforma" que o usuário viu |
 | paleta_fundo / paleta_superficie / paleta_destaque / paleta_texto | varchar(7) | paleta pessoal (V8): todas nulas (segue a paleta global) ou todas `#RRGGBB` maiúsculas (CHECK) |
 | criado_em / atualizado_em | timestamptz | |
 
@@ -223,10 +224,11 @@ Códigos: `VALIDACAO` (400), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `NA
 | Método | Rota | Perfil | Request | Response |
 |---|---|---|---|---|
 | POST | `/api/auth/login` | Público | `{ email, senha }` | `200 { token, expiraEm, usuario: UsuarioLogadoDTO }` · 401 credenciais inválidas/usuário inativo |
-| GET | `/api/auth/me` | Autenticado | — | `200 UsuarioLogadoDTO` (= `UsuarioDTO` + `paleta`, `null` se segue a global) |
+| GET | `/api/auth/me` | Autenticado | — | `200 UsuarioLogadoDTO` (= `UsuarioDTO` + `paleta`, `null` se segue a global, + `novidadesVistasVersao`) |
 | PUT | `/api/auth/me/senha` | Autenticado | `{ senhaAtual, novaSenha }` | `204` |
 | PUT | `/api/auth/me/paleta` | Autenticado | `{ fundo, superficie, destaque, texto }` (`#RRGGBB`) | `200` paleta salva (maiúsculas) · 400 cor inválida |
 | DELETE | `/api/auth/me/paleta` | Autenticado | — | `204`: volta a seguir a paleta global |
+| PUT | `/api/auth/me/novidades` | Autenticado | `{ versao }` (≥ 1) | `200 { versao }`: marca as novidades como vistas até essa versão; nunca diminui |
 
 JWT: claims `sub` (id), `upn` (email), `groups` ([perfil]), `name`; expiração configurável.
 
@@ -378,6 +380,7 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 | Classe | Cobertura |
 |---|---|
 | `CacheDeListagensTest` (2) | listagens de projetos e usuários (com cache) refletem na hora criar, renomear, arquivar/desarquivar e desativar/reativar |
+| `NovidadesVistasTest` (5) | usuário novo com versão 0, marcar como visto vale no próximo login (outro navegador), nunca volta atrás, controle por usuário, versão inválida 400 |
 | `PaletaPessoalTest` (6) | sem paleta → `null`, salva em maiúsculas e volta no `/me` e no login, não afeta outros usuários nem a global, restaurar volta à global, cor inválida ou faltando 400, listagem de usuários não expõe a paleta |
 | `AuthResourceTest` (10) | login, e-mail sem diferenciar maiúsculas, senha errada/e-mail inexistente (mesma mensagem), validação, usuário inativo, sem token/token inválido → 401, `/me`, troca de senha |
 | `PermissoesTest` (6) | dev recebe 403 em usuários/projetos/configurações; dev consulta tudo; admin gerencia; usuário desativado com token válido → 403 |
@@ -434,6 +437,7 @@ Além dos testes, a imagem Docker foi validada no perfil `prod` (PostgreSQL 17 e
 - **Responsáveis:** `responsavelIds` é a lista completa: no `PUT`, quem não estiver nela sai (`[]` = sem responsável). Na criação, autoatribuição = incluir o próprio `id` (de `/api/auth/me`). Quem já era responsável e foi desativado pode continuar na lista; quem entra precisa estar ativo. O filtro `responsavelId` traz os chamados em que a pessoa é **um** dos responsáveis. O campo antigo `responsavelId` (único) ainda é aceito quando `responsavelIds` não vem.
 - **Fila do projeto:** só chamados `ABERTO` e `EM_ANDAMENTO` (V5). Listar com `?projetoId=X&status=ABERTO,EM_ANDAMENTO&ordem=POSICAO&tamanho=100`. Ao soltar um item, chamar `PUT /api/chamados/{id}/posicao` com a nova posição (1-based) e recarregar a lista. A tela usa os mesmos filtros da lista (componente `filtros-chamados`) e desliga a reordenação enquanto houver filtro, porque a lista fica parcial.
 - **Paginação:** `pagina` começa em 0; `tamanho` máximo 100. O tamanho padrão sugerido vem de `geral.tamanhoPaginaPadrao` em `/api/configuracoes`.
+- **Novidades da plataforma:** as versões ficam em `frontend/src/app/core/novidades/novidades.ts` (número, data e itens com título, frase e atalho opcional). O pop-up abre sozinho, uma vez por pessoa, quando `usuario.novidadesVistasVersao` (login e `/me`) é menor que a maior versão do arquivo; "Entendi", X, Esc, clique fora ou um atalho chamam `PUT /api/auth/me/novidades`. **Para anunciar uma atualização:** acrescente uma versão com número maior no fim da lista e publique. O link "Novidades" no rodapé da barra lateral reabre o pop-up.
 - **Paleta:** `GET /api/configuracoes` é público. Aplicar antes do login, por exemplo `--cor-fundo: paleta.fundo`, `--cor-superficie: paleta.superficie`, `--cor-destaque: paleta.destaque`, `--cor-texto: paleta.texto`. As cores voltam sempre em maiúsculas `#RRGGBB`. **Paleta pessoal** (`usuario.paleta` no login e no `/me`): aplicada por cima da global só enquanto o usuário está logado; a tela de login usa sempre a global, e sair volta à global. O `index.html` lê a paleta pessoal da sessão (`sessionStorage`) para não piscar a global ao recarregar.
 - **Erros:** sempre `{ codigo, mensagem, detalhes[], timestamp }`. `mensagem` já está em português e pode ser exibida; `detalhes[].campo` casa com o nome do campo do formulário.
 - **Datas:** ISO-8601 em UTC (`2026-10-23T18:00:00Z`); converter para o fuso local no frontend.
