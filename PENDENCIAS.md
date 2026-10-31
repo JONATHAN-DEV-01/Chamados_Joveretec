@@ -144,7 +144,7 @@ Em desenvolvimento, o frontend usa `src/environments/environment.ts` (`http://lo
 - [ ] **Trocar a senha do admin inicial** logo após o primeiro login: menu do usuário (canto superior direito) → **Minha conta → Alterar senha**. Depois, troque também o valor de `ADMIN_SENHA` no Render por outro valor aleatório. A variável não é mais usada, mas precisa existir, e assim a senha antiga não fica guardada lá.
 - [ ] **Chaves JWT de produção** geradas só para produção (passo 2), nunca reutilizadas de dev/test e fora do Git. **Ainda há cópias de `jwt-privada.pem` e `jwt-publica.pem` na raiz do projeto local:** guarde a privada num cofre e apague as duas.
 - [x] **CORS** restrito ao domínio final da Vercel (passo 5). Nunca use `*`. *Conferido em 30/10.*
-- [x] **Buckets do Storage privados**, com a política restritiva, e **RLS ligado** em todas as tabelas de `public`. *Conferido em 30/10.*
+- [x] **Buckets do Storage privados**, com a política restritiva, e **RLS ligado** em todas as tabelas de `public`. *Conferido em 30/10.* A `chamado_responsavel` (V4) tinha ficado sem RLS e exposta à API REST do Supabase; a V7 corrige. **Toda tabela nova precisa de `ENABLE ROW LEVEL SECURITY` na própria migration**: as da V1 a V3 tiveram o RLS ligado à mão no painel.
 - [ ] Senha do banco forte e única. Ative 2FA nas contas do Supabase, Render, Vercel e GitHub.
 - [ ] **Troque a senha do banco** se ela tiver circulado fora do gerenciador de senhas (chat, e-mail, print): *Supabase → Project Settings → Database → Reset database password*, e depois atualize `DB_PASSWORD` no Render.
 - [ ] **O repositório é público:** nunca versione `.env`, `*.pem`, senhas ou chaves. O `.gitignore` já cobre `.env*` e `*.pem`.
