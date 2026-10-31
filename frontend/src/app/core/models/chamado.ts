@@ -42,7 +42,18 @@ export interface Chamado extends ChamadoResumo {
   criadoPor: Referencia;
   criadoEm: string;
   tempoGastoTotalMinutos: number;
+  tempos: TemposDoChamado;
   versao: number;
+}
+
+/**
+ * Tempo corrido (24h por dia), em segundos, calculado pelo histórico de status. Diferente de
+ * `tempoGastoTotalMinutos`, que é o tempo informado nos acompanhamentos.
+ */
+export interface TemposDoChamado {
+  /** Da abertura até a conclusão, ou até agora se ainda não foi concluído. */
+  totalSegundos: number;
+  emAndamentoSegundos: number;
 }
 
 export interface Historico {

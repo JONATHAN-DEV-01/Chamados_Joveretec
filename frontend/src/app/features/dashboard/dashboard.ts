@@ -8,6 +8,7 @@ import { carregarComParametros, listaDeApoio } from '../../shared/carregamento';
 import { ROTULO_STATUS, ROTULO_URGENCIA } from '../../shared/rotulos';
 import { Barra, Barras } from './barras';
 import { COR_STATUS, COR_URGENCIA } from './cores-serie';
+import { TemposPorChamado } from './tempos-por-chamado';
 import { UltimasAtualizacoes } from './ultimas-atualizacoes';
 
 interface Segmento {
@@ -17,7 +18,7 @@ interface Segmento {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, Barras, UltimasAtualizacoes],
+  imports: [RouterLink, Barras, TemposPorChamado, UltimasAtualizacoes],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

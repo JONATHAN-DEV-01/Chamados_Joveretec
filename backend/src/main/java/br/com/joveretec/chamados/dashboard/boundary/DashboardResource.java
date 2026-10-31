@@ -2,6 +2,7 @@ package br.com.joveretec.chamados.dashboard.boundary;
 
 import br.com.joveretec.chamados.comum.seguranca.UsuarioLogado;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.MeusChamadosDTO;
+import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TemposDTO;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorDesenvolvedorDTO;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorStatusDTO;
 import br.com.joveretec.chamados.dashboard.boundary.DashboardDTOs.TotalPorUrgenciaDTO;
@@ -55,6 +56,12 @@ public class DashboardResource {
             @Min(value = 1, message = "O limite deve ser no mínimo 1.")
             @Max(value = 50, message = "O limite deve ser no máximo 50.") int limite) {
         return dashboard.ultimasAtualizacoes(usuarioLogado.id(), limite).stream().map(UltimaAtualizacaoDTO::de).toList();
+    }
+
+    @GET
+    @Path("/tempos")
+    public TemposDTO tempos(@QueryParam("projetoId") Long projetoId) {
+        return TemposDTO.de(dashboard.tempos(projetoId));
     }
 
     @GET

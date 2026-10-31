@@ -11,8 +11,8 @@
       <div class="selos">
         <app-badge-urgencia [urgencia]="c.urgencia" />
         <app-badge-status [status]="c.status" />
-        <span class="tempo-total" title="Tempo gasto somado nos acompanhamentos">
-          ⏱ {{ c.tempoGastoTotalMinutos | duracao }} gastos
+        <span class="tempo-total" title="Tempo gasto informado nos acompanhamentos">
+          ⏱ {{ c.tempoGastoTotalMinutos | duracao }} informados
         </span>
       </div>
     </div>
@@ -133,6 +133,12 @@
           <dd>{{ c.criadoEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
           <dt class="rotulo">Última atividade</dt>
           <dd>{{ c.ultimaAtividadeEm | date: 'dd/MM/yyyy HH:mm' }}</dd>
+          <dt class="rotulo" title="Tempo corrido (24h por dia), pelas mudanças de status">
+            {{ c.status === 'CONCLUIDO' ? 'Resolvido em' : 'Aberto há' }}
+          </dt>
+          <dd>{{ c.tempos.totalSegundos | tempoCorrido }}</dd>
+          <dt class="rotulo" title="Soma dos períodos no status Em andamento">Em andamento</dt>
+          <dd>{{ c.tempos.emAndamentoSegundos | tempoCorrido }}</dd>
         </dl>
       </section>
 

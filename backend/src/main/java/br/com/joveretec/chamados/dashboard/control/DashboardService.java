@@ -8,6 +8,10 @@ import br.com.joveretec.chamados.chamado.entity.ContagemPorStatus;
 import br.com.joveretec.chamados.chamado.entity.ContagemPorUrgencia;
 import br.com.joveretec.chamados.chamado.entity.FiltroChamados;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository.ChamadoEmAberto;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository.ResumoDeTempos;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository.TempoPorResponsavel;
 import br.com.joveretec.chamados.chamado.entity.Urgencia;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.faulttolerance.Timeout;
@@ -23,13 +27,17 @@ import java.util.Map;
 public class DashboardService {
 
     private static final long TIMEOUT_SEGUNDOS = 5;
+    private static final int ABERTOS_HA_MAIS_TEMPO = 5;
 
     private final ChamadoRepository chamados;
     private final AcompanhamentoRepository acompanhamentos;
+    private final TemposRepository tempos;
 
-    public DashboardService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos) {
+    public DashboardService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos,
+                            TemposRepository tempos) {
         this.chamados = chamados;
         this.acompanhamentos = acompanhamentos;
+        this.tempos = tempos;
     }
 
     /** Acompanhamentos mais recentes nos chamados em que o usuário é responsável ou autor. */
@@ -68,6 +76,16 @@ public class DashboardService {
         return new MeusChamados(total, porStatus, contarPorUrgencia(filtro));
     }
 
+    /**
+     * Card "Tempo por chamado": médias dos concluídos (no geral e por responsável; um chamado com
+     * vários responsáveis conta para cada um) e os chamados abertos há mais tempo.
+     */
+    @Timeout(value = TIMEOUT_SEGUNDOS, unit = ChronoUnit.SECONDS)
+    public TemposDoDashboard tempos(Long projetoId) {
+        return new TemposDoDashboard(tempos.resumoDosConcluidos(projetoId), tempos.porResponsavel(projetoId),
+                tempos.abertosHaMaisTempo(projetoId, ABERTOS_HA_MAIS_TEMPO));
+    }
+
     private Map<StatusChamado, Long> contarPorStatus(FiltroChamados filtro) {
         Map<StatusChamado, Long> totais = zerado(StatusChamado.class);
         chamados.contarPorStatus(filtro).forEach((ContagemPorStatus c) -> totais.put(c.status(), c.total()));
@@ -94,6 +112,10 @@ public class DashboardService {
         public long total() {
             return porStatus.values().stream().mapToLong(Long::longValue).sum();
         }
+    }
+
+    public record TemposDoDashboard(ResumoDeTempos resumo, List<TempoPorResponsavel> porResponsavel,
+                                    List<ChamadoEmAberto> abertosHaMaisTempo) {
     }
 
     public record MeusChamados(long total, Map<StatusChamado, Long> porStatus, Map<Urgencia, Long> porUrgencia) {

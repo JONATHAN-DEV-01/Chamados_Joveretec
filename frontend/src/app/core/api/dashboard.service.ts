@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin } from 'rxjs';
-import { MeusChamados, TotalPorDesenvolvedor, TotalPorStatus, TotalPorUrgencia } from '../models/dashboard';
+import { MeusChamados, TemposDashboard, TotalPorDesenvolvedor, TotalPorStatus, TotalPorUrgencia } from '../models/dashboard';
 import { UltimaAtualizacao } from '../models/feed';
 import { parametros, urlApi } from './parametros';
 
@@ -10,6 +10,7 @@ export interface Indicadores {
   porStatus: TotalPorStatus[];
   porUrgencia: TotalPorUrgencia[];
   porDesenvolvedor: TotalPorDesenvolvedor[];
+  tempos: TemposDashboard;
 }
 
 const LIMITE_ULTIMAS = 8;
@@ -19,7 +20,7 @@ export class DashboardService {
   private readonly http = inject(HttpClient);
   private readonly url = urlApi('/dashboard');
 
-  /** Os quatro indicadores em paralelo, opcionalmente restritos a um projeto. */
+  /** Os indicadores em paralelo, opcionalmente restritos a um projeto. */
   indicadores(projetoId: number | null): Observable<Indicadores> {
     const params = parametros({ projetoId });
     return forkJoin({
@@ -27,6 +28,7 @@ export class DashboardService {
       porStatus: this.http.get<TotalPorStatus[]>(`${this.url}/por-status`, { params }),
       porUrgencia: this.http.get<TotalPorUrgencia[]>(`${this.url}/por-urgencia`, { params }),
       porDesenvolvedor: this.http.get<TotalPorDesenvolvedor[]>(`${this.url}/por-desenvolvedor`, { params }),
+      tempos: this.http.get<TemposDashboard>(`${this.url}/tempos`, { params }),
     });
   }
 

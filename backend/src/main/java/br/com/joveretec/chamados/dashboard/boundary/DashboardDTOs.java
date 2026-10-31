@@ -6,6 +6,7 @@ import br.com.joveretec.chamados.chamado.entity.StatusChamado;
 import br.com.joveretec.chamados.chamado.entity.TipoAcompanhamento;
 import br.com.joveretec.chamados.chamado.entity.Urgencia;
 import br.com.joveretec.chamados.dashboard.control.DashboardService.MeusChamados;
+import br.com.joveretec.chamados.dashboard.control.DashboardService.TemposDoDashboard;
 import br.com.joveretec.chamados.dashboard.control.DashboardService.TotaisDoDesenvolvedor;
 
 import java.time.Instant;
@@ -66,6 +67,35 @@ public final class DashboardDTOs {
     }
 
     public record ReferenciaChamadoDTO(Long id, String titulo) {
+    }
+
+    /**
+     * Tempo corrido (24h por dia), em segundos, calculado pelo histórico de status. As médias usam só
+     * os chamados concluídos e ficam nulas enquanto não houver nenhum.
+     */
+    public record TemposDTO(long concluidos, Long resolucaoMediaSegundos, Long andamentoMedioSegundos,
+                            List<TempoPorResponsavelDTO> porResponsavel, List<ChamadoEmAbertoDTO> abertosHaMaisTempo) {
+
+        static TemposDTO de(TemposDoDashboard tempos) {
+            var resumo = tempos.resumo();
+            return new TemposDTO(resumo.concluidos(), resumo.resolucaoMediaSegundos(), resumo.andamentoMedioSegundos(),
+                    tempos.porResponsavel().stream()
+                            .map(r -> new TempoPorResponsavelDTO(new ReferenciaDTO(r.usuarioId(), r.nome()),
+                                    r.concluidos(), r.resolucaoMediaSegundos(), r.andamentoMedioSegundos()))
+                            .toList(),
+                    tempos.abertosHaMaisTempo().stream()
+                            .map(c -> new ChamadoEmAbertoDTO(new ReferenciaChamadoDTO(c.id(), c.titulo()), c.status(),
+                                    c.urgencia(), c.criadoEm(), c.totalSegundos(), c.emAndamentoSegundos()))
+                            .toList());
+        }
+    }
+
+    public record TempoPorResponsavelDTO(ReferenciaDTO usuario, long concluidos, long resolucaoMediaSegundos,
+                                         long andamentoMedioSegundos) {
+    }
+
+    public record ChamadoEmAbertoDTO(ReferenciaChamadoDTO chamado, StatusChamado status, Urgencia urgencia,
+                                     Instant criadoEm, long abertoHaSegundos, long emAndamentoSegundos) {
     }
 
     public record MeusChamadosDTO(long total, List<TotalPorStatusDTO> porStatus,

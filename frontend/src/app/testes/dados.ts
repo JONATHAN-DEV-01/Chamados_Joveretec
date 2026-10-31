@@ -43,6 +43,7 @@ export function chamado(id = 10): Chamado {
     criadoPor: { id: USUARIO_DEV.id, nome: USUARIO_DEV.nome },
     criadoEm: '2026-10-20T12:00:00Z',
     tempoGastoTotalMinutos: 0,
+    tempos: { totalSegundos: 0, emAndamentoSegundos: 0 },
     versao: 0,
   };
 }

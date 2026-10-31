@@ -10,6 +10,8 @@ import br.com.joveretec.chamados.chamado.entity.FiltroChamados;
 import br.com.joveretec.chamados.chamado.entity.HistoricoChamado;
 import br.com.joveretec.chamados.chamado.entity.OrdemChamados;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository.TempoDoChamado;
 import br.com.joveretec.chamados.comum.erro.ExcecaoDeNegocio;
 import br.com.joveretec.chamados.comum.paginacao.Pagina;
 import br.com.joveretec.chamados.comum.paginacao.Paginacao;
@@ -32,16 +34,18 @@ public class ChamadoService {
     private final ChamadoRepository chamados;
     private final AcompanhamentoRepository acompanhamentos;
     private final AnexoRepository anexos;
+    private final TemposRepository tempos;
     private final HistoricoService historico;
     private final ProjetoService projetos;
     private final UsuarioService usuarios;
 
     public ChamadoService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos,
-                          AnexoRepository anexos, HistoricoService historico, ProjetoService projetos,
-                          UsuarioService usuarios) {
+                          AnexoRepository anexos, TemposRepository tempos, HistoricoService historico,
+                          ProjetoService projetos, UsuarioService usuarios) {
         this.chamados = chamados;
         this.acompanhamentos = acompanhamentos;
         this.anexos = anexos;
+        this.tempos = tempos;
         this.historico = historico;
         this.projetos = projetos;
         this.usuarios = usuarios;
@@ -59,6 +63,11 @@ public class ChamadoService {
     /** Soma do tempo gasto informado nos acompanhamentos publicados. */
     public long tempoGastoTotalMinutos(Long chamadoId) {
         return acompanhamentos.tempoGastoTotalMinutos(chamadoId);
+    }
+
+    /** Tempo corrido desde a abertura e tempo em "Em andamento", calculados pelo histórico de status. */
+    public TempoDoChamado tempos(Long chamadoId) {
+        return tempos.doChamado(chamadoId).orElse(new TempoDoChamado(0, 0));
     }
 
     /** Atualiza a "última atividade" do chamado sem alterar a versão (lock otimista). */

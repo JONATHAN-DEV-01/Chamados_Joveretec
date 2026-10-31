@@ -116,6 +116,6 @@ public class ChamadoResource {
     }
 
     private ChamadoDTO detalhe(Chamado chamado) {
-        return ChamadoDTO.de(chamado, chamados.tempoGastoTotalMinutos(chamado.getId()));
+        return ChamadoDTO.de(chamado, chamados.tempoGastoTotalMinutos(chamado.getId()), chamados.tempos(chamado.getId()));
     }
 }

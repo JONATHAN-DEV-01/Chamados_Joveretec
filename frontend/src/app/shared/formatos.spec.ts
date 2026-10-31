@@ -1,4 +1,4 @@
-import { duracao, ehImagem, iconeDoArquivo, iniciais, tamanhoLegivel, tempoRelativo } from './formatos';
+import { duracao, ehImagem, iconeDoArquivo, iniciais, tamanhoLegivel, tempoCorrido, tempoRelativo } from './formatos';
 
 describe('formatos', () => {
   it('tamanho legível em KB/MB/GB', () => {
@@ -14,6 +14,16 @@ describe('formatos', () => {
     expect(duracao(45)).toBe('45min');
     expect(duracao(120)).toBe('2h');
     expect(duracao(90)).toBe('1h 30min');
+  });
+
+  it('tempo corrido com as duas maiores unidades', () => {
+    expect(tempoCorrido(null)).toBe('—');
+    expect(tempoCorrido(30)).toBe('menos de 1min');
+    expect(tempoCorrido(45 * 60)).toBe('45min');
+    expect(tempoCorrido(3 * 3600)).toBe('3h');
+    expect(tempoCorrido(3 * 3600 + 20 * 60 + 59)).toBe('3h 20min');
+    expect(tempoCorrido(2 * 86400 + 4 * 3600 + 30 * 60)).toBe('2d 4h');
+    expect(tempoCorrido(5 * 86400)).toBe('5d');
   });
 
   it('tempo relativo em português', () => {

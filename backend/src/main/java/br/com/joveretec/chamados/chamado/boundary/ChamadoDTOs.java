@@ -6,6 +6,7 @@ import br.com.joveretec.chamados.chamado.entity.CampoHistorico;
 import br.com.joveretec.chamados.chamado.entity.Chamado;
 import br.com.joveretec.chamados.chamado.entity.HistoricoChamado;
 import br.com.joveretec.chamados.chamado.entity.StatusChamado;
+import br.com.joveretec.chamados.chamado.entity.TemposRepository.TempoDoChamado;
 import br.com.joveretec.chamados.chamado.entity.Urgencia;
 import br.com.joveretec.chamados.projeto.entity.Projeto;
 import br.com.joveretec.chamados.usuario.entity.Usuario;
@@ -82,16 +83,25 @@ public final class ChamadoDTOs {
                              Integer posicao, ReferenciaDTO projeto, List<ReferenciaDTO> responsaveis,
                              ReferenciaDTO responsavel, ReferenciaDTO criadoPor,
                              Instant criadoEm, Instant atualizadoEm, Instant ultimaAtividadeEm,
-                             long tempoGastoTotalMinutos, long versao) {
+                             long tempoGastoTotalMinutos, TemposDTO tempos, long versao) {
 
-        public static ChamadoDTO de(Chamado chamado, long tempoGastoTotalMinutos) {
+        public static ChamadoDTO de(Chamado chamado, long tempoGastoTotalMinutos, TempoDoChamado tempos) {
             List<Usuario> responsaveis = chamado.getResponsaveis();
             return new ChamadoDTO(chamado.getId(), chamado.getTitulo(), chamado.getDescricao(),
                     chamado.getUrgencia(), chamado.getStatus(), chamado.getPosicao(),
                     ReferenciaDTO.de(chamado.getProjeto()), ReferenciaDTO.de(responsaveis),
                     ReferenciaDTO.primeiro(responsaveis), ReferenciaDTO.de(chamado.getCriadoPor()), chamado.getCriadoEm(), chamado.getAtualizadoEm(),
-                    chamado.getUltimaAtividadeEm(), tempoGastoTotalMinutos, chamado.getVersao());
+                    chamado.getUltimaAtividadeEm(), tempoGastoTotalMinutos,
+                    new TemposDTO(tempos.totalSegundos(), tempos.emAndamentoSegundos()), chamado.getVersao());
         }
+    }
+
+    /**
+     * Tempo corrido (24h por dia) a partir do histórico de status: {@code totalSegundos} vai da abertura
+     * até a conclusão (ou até agora); {@code emAndamentoSegundos} soma os períodos em "Em andamento".
+     * Não confundir com {@code tempoGastoTotalMinutos}, que é o tempo informado nos acompanhamentos.
+     */
+    public record TemposDTO(long totalSegundos, long emAndamentoSegundos) {
     }
 
     public record HistoricoDTO(Long id, CampoHistorico campo, String valorAnterior, String valorNovo,

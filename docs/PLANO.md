@@ -257,7 +257,9 @@ JWT: claims `sub` (id), `upn` (email), `groups` ([perfil]), `name`; expiração 
 ChamadoResumoDTO = { id, titulo, urgencia, status, posicao,
                      projeto: { id, nome }, responsaveis: [{ id, nome }] (ordem alfabética),
                      responsavel: { id, nome } | null (o primeiro; só para clientes antigos), atualizadoEm, ultimaAtividadeEm }
-ChamadoDTO       = ChamadoResumoDTO + { descricao, criadoPor: { id, nome }, criadoEm, tempoGastoTotalMinutos, versao }
+ChamadoDTO       = ChamadoResumoDTO + { descricao, criadoPor: { id, nome }, criadoEm, tempoGastoTotalMinutos,
+                   tempos: { totalSegundos, emAndamentoSegundos }, versao }
+                   // tempoGastoTotalMinutos = informado nos acompanhamentos; tempos = tempo corrido pelo histórico de status
 HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome }, alteradoEm }
 ```
 
@@ -316,6 +318,7 @@ Todos aceitam `projetoId` opcional. Agregações feitas no banco (`GROUP BY`).
 | GET | `/api/dashboard/por-status` | Autenticado | `200 [ { status, total } ]` (inclui zeros) |
 | GET | `/api/dashboard/por-urgencia` | Autenticado | `200 [ { urgencia, total } ]` |
 | GET | `/api/dashboard/por-desenvolvedor` | Autenticado | `200 [ { usuario: { id, nome }, abertos, emAndamento, concluidos, total } ]` (só quem tem chamados atribuídos; ordenado por nome) |
+| GET | `/api/dashboard/tempos?projetoId` | Autenticado | `200 { concluidos, resolucaoMediaSegundos, andamentoMedioSegundos, porResponsavel: [ { usuario, concluidos, resolucaoMediaSegundos, andamentoMedioSegundos } ], abertosHaMaisTempo: [ { chamado: { id, titulo }, status, urgencia, criadoEm, abertoHaSegundos, emAndamentoSegundos } ] }`. Tempo corrido (24h por dia) calculado pelos eventos `STATUS` do histórico: total = abertura até a última conclusão (ou até agora); em andamento = soma dos períodos em `EM_ANDAMENTO`. Médias só dos concluídos (nulas se não houver); um chamado com vários responsáveis conta para cada um; até 5 abertos, do mais antigo. Concluído sem evento de status (dado antigo) usa `atualizado_em` como conclusão |
 | GET | `/api/dashboard/meus-chamados` | Autenticado | `200 { total, porStatus: [...], porUrgencia: [...] }` do usuário logado |
 | GET | `/api/dashboard/ultimas-atualizacoes?limite` | Autenticado | `200 [ { acompanhamentoId, chamado: { id, titulo }, autor, tipo, resumo, criadoEm } ]`: acompanhamentos recentes nos chamados em que o usuário é responsável ou autor (limite de 1 a 50, padrão 10; resumo sem Markdown) |
 
@@ -375,6 +378,7 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 | `ChamadoResourceTest` (16) | criação no fim e em posição informada, validação, urgência inválida, JSON malformado, posição fora da fila, atribuição a outro/autoatribuição, "atribuir a mim" + histórico, responsável inativo, status, edição com histórico só do que mudou, lock otimista (409), reordenação para cima/baixo e limites, projeto arquivado, 404 |
 | `FiltrosChamadoTest` (12) | ordenação por urgência+posição e por posição, cada filtro, filtros combinados, busca em título/descrição, paginação, limites de página, enum inválido |
 | `DashboardResourceTest` (4) | por status (com zeros), por urgência, por desenvolvedor, meus chamados |
+| `TemposChamadoTest` (7) | tempo total e em andamento no detalhe (com idas e voltas de status), não concluído conta até agora, médias só dos concluídos, chamado com vários responsáveis conta para cada um, abertos há mais tempo em ordem, projeto sem concluídos (médias nulas), concluído sem evento de status usa a última atualização |
 | `ConfiguracaoResourceTest` (4) | leitura pública, alteração pelo admin refletida na leitura (cache invalidado), cor inválida, sem token |
 | `UsuarioProjetoResourceTest` (9) | e-mail duplicado, alteração de perfil, admin não se desativa, filtros, arquivar/desarquivar, nome duplicado, `/q/health/ready`, rota inexistente 404 |
 | `AcompanhamentoResourceTest` (15) | publicar, validação, editar ("editado"), outro dev recebe 403, admin edita e exclui, autor exclui, chamado errado 404, Solução concluindo o chamado, só Solução conclui, tempo total, última atividade sem mudar a versão, projeto arquivado bloqueia tudo, últimas atualizações (e resumo sem Markdown) |

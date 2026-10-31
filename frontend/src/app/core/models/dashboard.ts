@@ -24,3 +24,28 @@ export interface MeusChamados {
   porStatus: TotalPorStatus[];
   porUrgencia: TotalPorUrgencia[];
 }
+
+/** Card "Tempo por chamado": tempo corrido em segundos; as médias consideram só os concluídos. */
+export interface TemposDashboard {
+  concluidos: number;
+  resolucaoMediaSegundos: number | null;
+  andamentoMedioSegundos: number | null;
+  porResponsavel: TempoPorResponsavel[];
+  abertosHaMaisTempo: ChamadoEmAberto[];
+}
+
+export interface TempoPorResponsavel {
+  usuario: Referencia;
+  concluidos: number;
+  resolucaoMediaSegundos: number;
+  andamentoMedioSegundos: number;
+}
+
+export interface ChamadoEmAberto {
+  chamado: { id: number; titulo: string };
+  status: StatusChamado;
+  urgencia: Urgencia;
+  criadoEm: string;
+  abertoHaSegundos: number;
+  emAndamentoSegundos: number;
+}

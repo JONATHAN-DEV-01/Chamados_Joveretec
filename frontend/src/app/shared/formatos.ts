@@ -30,6 +30,30 @@ export function duracao(minutos: number | null | undefined): string {
   return resto ? `${horas}h ${resto}min` : `${horas}h`;
 }
 
+/**
+ * Tempo corrido em segundos, com as duas maiores unidades: 2d 4h, 3h 20min, 45min.
+ * Abaixo de um minuto, "menos de 1min"; sem valor, "—".
+ */
+export function tempoCorrido(segundos: number | null | undefined): string {
+  if (segundos == null || !Number.isFinite(segundos) || segundos < 0) {
+    return '—';
+  }
+  const minutos = Math.floor(segundos / 60);
+  if (minutos < 1) {
+    return 'menos de 1min';
+  }
+  const dias = Math.floor(minutos / 1440);
+  const horas = Math.floor((minutos % 1440) / 60);
+  const resto = minutos % 60;
+  if (dias) {
+    return horas ? `${dias}d ${horas}h` : `${dias}d`;
+  }
+  if (horas) {
+    return resto ? `${horas}h ${resto}min` : `${horas}h`;
+  }
+  return `${resto}min`;
+}
+
 const PASSOS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['second', 60],
   ['minute', 60],
@@ -96,6 +120,13 @@ export class TamanhoPipe implements PipeTransform {
 export class DuracaoPipe implements PipeTransform {
   transform(minutos: number | null | undefined): string {
     return duracao(minutos);
+  }
+}
+
+@Pipe({ name: 'tempoCorrido' })
+export class TempoCorridoPipe implements PipeTransform {
+  transform(segundos: number | null | undefined): string {
+    return tempoCorrido(segundos);
   }
 }
 

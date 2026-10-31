@@ -15,7 +15,7 @@ import { carregarComParametros, listaDeApoio } from '../../../shared/carregament
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
-import { DuracaoPipe } from '../../../shared/formatos';
+import { DuracaoPipe, TempoCorridoPipe } from '../../../shared/formatos';
 import { RotuloStatusPipe, RotuloUrgenciaPipe } from '../../../shared/rotulos';
 import { Avatar } from '../../../shared/componentes/avatar';
 import { SeletorResponsaveis } from '../seletor-responsaveis';
@@ -36,6 +36,7 @@ import { FeedChamado } from './feed/feed-chamado';
     Avatar,
     FeedChamado,
     DuracaoPipe,
+    TempoCorridoPipe,
   ],
   templateUrl: './detalhe-chamado.html',
   styleUrl: './detalhe-chamado.css',
