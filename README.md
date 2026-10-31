@@ -1,6 +1,6 @@
 # Chamados Joveretec
 
-Ferramenta web de gestão de chamados para equipes de desenvolvimento: filas priorizáveis por projeto, atribuição (inclusive "atribuir a mim"), feed de acompanhamentos com eventos automáticos, anexos colados, arrastados ou escolhidos pelo clipe direto no texto da descrição e dos acompanhamentos (enviados do navegador ao Supabase Storage, com progresso e retomada, e exibidos como miniaturas ou links), dashboard (com o tempo gasto por chamado) e paleta de cores configurável pelo administrador.
+Ferramenta web de gestão de chamados para equipes de desenvolvimento: filas priorizáveis por projeto, atribuição (inclusive "atribuir a mim"), feed de acompanhamentos com eventos automáticos, anexos colados, arrastados ou escolhidos pelo clipe direto no texto da descrição e dos acompanhamentos (enviados do navegador ao Supabase Storage, com progresso e retomada, e exibidos como miniaturas ou links), dashboard (com o tempo gasto por chamado), paleta de cores do sistema definida pelo administrador e paleta pessoal de cada usuário em "Meu perfil".
 
 | Pasta | Conteúdo |
 |---|---|
@@ -43,12 +43,12 @@ Abra `http://localhost:4200` e entre com o admin de desenvolvimento. O frontend 
 3. Na **lista de chamados**, combine filtros e busca. A ordem é urgência e depois a posição na fila.
 4. Abra um chamado: edite, mude o status e use **Atribuir a mim**. No **feed**, publique um acompanhamento (Markdown, tempo gasto, anexos colados com Ctrl+V, arrastados ou pelo clipe, Ctrl+Enter) ou uma **Solução** que conclui o chamado; os eventos automáticos aparecem intercalados.
 5. Em **Fila do projeto**, reordene arrastando ou com as setas.
-6. Confira o **Dashboard** (inclusive o card "Tempo por chamado") e troque a paleta em **Configurações**: a pré-visualização é imediata e, ao salvar, vale para todos.
+6. Confira o **Dashboard** (inclusive o card "Tempo por chamado") e troque a paleta em **Configurações**: a pré-visualização é imediata e, ao salvar, vale para todos. Em **Meu perfil**, escolha uma paleta só sua.
 
 ## Testes
 ```bash
-cd backend  && ./mvnw test           # 143 testes (API contra PostgreSQL real; requer Docker)
-cd frontend && npm run test:ci       # 129 testes unitários (Vitest)
+cd backend  && ./mvnw test           # 149 testes (API contra PostgreSQL real; requer Docker)
+cd frontend && npm run test:ci       # 135 testes unitários (Vitest)
 ```
 O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os dois em todo push e pull request, além do build da imagem Docker e do build de produção do frontend. O [`manter-acordado.yml`](.github/workflows/manter-acordado.yml) chama o health check do backend a cada 10 minutos, para o Render gratuito não hibernar.
 
@@ -74,7 +74,7 @@ Resumo; a lista completa com request/response está em [docs/PLANO.md](docs/PLAN
 
 | Recurso | Rotas |
 |---|---|
-| Auth | `POST /api/auth/login`, `GET /api/auth/me`, `PUT /api/auth/me/senha` |
+| Auth | `POST /api/auth/login`, `GET /api/auth/me`, `PUT /api/auth/me/senha`, `PUT/DELETE /api/auth/me/paleta` (paleta pessoal) |
 | Usuários | `GET/POST /api/usuarios`, `GET/PUT /api/usuarios/{id}`, `POST /api/usuarios/{id}/desativar` · `/reativar` |
 | Projetos | `GET/POST /api/projetos`, `GET/PUT /api/projetos/{id}`, `POST /api/projetos/{id}/arquivar` · `/desarquivar` |
 | Chamados | `GET/POST /api/chamados`, `GET/PUT /api/chamados/{id}`, `PATCH .../status`, `POST .../atribuir-a-mim`, `PUT .../posicao`, `GET .../historico` |

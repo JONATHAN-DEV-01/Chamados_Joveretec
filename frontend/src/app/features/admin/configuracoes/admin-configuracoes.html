@@ -4,32 +4,10 @@
 
 <form class="colunas" [formGroup]="formulario" (ngSubmit)="salvar()" novalidate>
   <div class="coluna">
-    <section class="cartao" formGroupName="paleta" aria-labelledby="titulo-paleta">
+    <section class="cartao" aria-labelledby="titulo-paleta">
       <h2 id="titulo-paleta">Paleta de cores</h2>
-      <div class="cores">
-        @for (cor of CORES; track cor.chave) {
-          <div class="campo">
-            <label [for]="'cor-' + cor.chave">{{ cor.rotulo }}</label>
-            <div class="seletor-cor">
-              <!-- Não usa formControlName: dois inputs no mesmo controle não se atualizam entre si. -->
-              <input
-                type="color"
-                [value]="corDoSeletor(cor.chave)"
-                (input)="escolherCor(cor.chave, $event)"
-                [disabled]="salvando()"
-                [attr.aria-label]="'Escolher cor: ' + cor.rotulo"
-              />
-              <input [id]="'cor-' + cor.chave" type="text" [formControlName]="cor.chave" maxlength="7" spellcheck="false" />
-            </div>
-            <span class="dica">{{ cor.uso }}</span>
-            <app-erro-campo [controle]="formulario.controls.paleta.controls[cor.chave]" [mensagemFormato]="MENSAGEM_COR" />
-          </div>
-        }
-      </div>
-
-      @for (aviso of avisos(); track aviso) {
-        <p class="alerta">{{ aviso }}</p>
-      }
+      <p class="dica">Padrão de todos os usuários e da tela de login. Quem escolher uma paleta em "Meu perfil" vê a própria.</p>
+      <app-campos-de-paleta [grupo]="formulario.controls.paleta" [paleta]="paleta()" [desabilitado]="salvando()" />
     </section>
 
     <section class="cartao" formGroupName="geral" aria-labelledby="titulo-geral">
@@ -58,28 +36,10 @@
 
   <section class="coluna" aria-labelledby="titulo-previa">
     <h2 id="titulo-previa">Pré-visualização</h2>
-    <div #previa class="tema-local previa" aria-hidden="true">
-      <div class="previa-lateral">
-        <strong>{{ formulario.controls.geral.controls.nomeSistema.value || 'Sistema' }}</strong>
-        <span class="previa-item ativo">Chamados</span>
-        <span class="previa-item">Dashboard</span>
-      </div>
-      <div class="previa-conteudo">
-        <div class="previa-cartao">
-          <p class="previa-titulo">Erro ao salvar relatório</p>
-          <p class="previa-texto">Texto secundário de exemplo e um <a>link</a>.</p>
-          <div class="previa-selos">
-            <app-badge-urgencia urgencia="CRITICA" />
-            <app-badge-urgencia urgencia="ALTA" />
-            <app-badge-urgencia urgencia="MEDIA" />
-          </div>
-        </div>
-        <div class="previa-botoes">
-          <span class="btn btn-primario btn-pequeno">Botão primário</span>
-          <span class="btn btn-pequeno">Secundário</span>
-        </div>
-      </div>
-    </div>
+    <app-previa-de-paleta [paleta]="paleta()" [nomeSistema]="formulario.controls.geral.controls.nomeSistema.value" />
     <p class="dica">As cores só são aplicadas para todos depois de salvar.</p>
+    @if (temPaletaPessoal()) {
+      <p class="dica">Você usa uma paleta pessoal, então esta página continua com as suas cores depois de salvar.</p>
+    }
   </section>
 </form>

@@ -9,11 +9,19 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" sizes="16x16 32x32 48x48" />
     <script>
-      // Reaplica a última paleta usada (salva pelo TemaService) antes do Angular subir,
-      // para o splash e a primeira tela já saírem com as cores do sistema.
+      // Reaplica a paleta antes do Angular subir, para o splash e a primeira tela já saírem com
+      // as cores certas: a pessoal, se há sessão válida nesta aba (recarregar logado), ou a do
+      // sistema, guardada pelo TemaService (tela de login e primeira abertura).
       (function () {
         try {
-          var p = JSON.parse(localStorage.getItem('chamados.paleta') || 'null');
+          var p = null;
+          try {
+            var sessao = JSON.parse(sessionStorage.getItem('chamados.sessao') || 'null');
+            if (sessao && sessao.usuario && sessao.usuario.paleta && Date.parse(sessao.expiraEm) > Date.now()) {
+              p = sessao.usuario.paleta;
+            }
+          } catch (e) {}
+          p = p || JSON.parse(localStorage.getItem('chamados.paleta') || 'null');
           var hex = /^#[0-9a-f]{6}$/i;
           if (p && hex.test(p.fundo) && hex.test(p.destaque) && hex.test(p.texto) && hex.test(p.superficie)) {
             var s = document.documentElement.style;

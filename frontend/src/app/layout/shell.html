@@ -41,7 +41,7 @@
     </button>
     <div class="topo-direita">
       @if (auth.usuario(); as usuario) {
-        <a class="usuario" routerLink="/conta" title="Minha conta">
+        <a class="usuario" routerLink="/perfil" title="Meu perfil">
           <span class="nome">{{ usuario.nome }}</span>
           <span class="perfil">{{ usuario.perfil | rotuloPerfil }}</span>
         </a>

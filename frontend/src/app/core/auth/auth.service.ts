@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { urlApi } from '../api/parametros';
+import { Paleta } from '../models/configuracao';
 import { LoginResponse, Usuario } from '../models/usuario';
 
 interface Sessao {
@@ -53,6 +54,16 @@ export class AuthService {
     return this.http.get<Usuario>(urlApi('/auth/me')).pipe(tap((usuario) => this.atualizarUsuario(usuario)));
   }
 
+  /** Salva a paleta pessoal; a sessão é atualizada e o tema muda na hora. */
+  salvarPaleta(paleta: Paleta): Observable<Paleta> {
+    return this.http.put<Paleta>(urlApi('/auth/me/paleta'), paleta).pipe(tap((salva) => this.trocarPaleta(salva)));
+  }
+
+  /** Remove a paleta pessoal: volta a seguir a paleta do sistema. */
+  restaurarPaleta(): Observable<void> {
+    return this.http.delete<void>(urlApi('/auth/me/paleta')).pipe(tap(() => this.trocarPaleta(null)));
+  }
+
   alterarSenha(senhaAtual: string, novaSenha: string): Observable<void> {
     return this.http.put<void>(urlApi('/auth/me/senha'), { senhaAtual, novaSenha });
   }
@@ -67,6 +78,13 @@ export class AuthService {
   encerrar(): void {
     this.sessao.set(null);
     armazenamento()?.removeItem(CHAVE_SESSAO);
+  }
+
+  private trocarPaleta(paleta: Paleta | null): void {
+    const usuario = this.usuario();
+    if (usuario) {
+      this.atualizarUsuario({ ...usuario, paleta });
+    }
   }
 
   private guardar(sessao: Sessao): void {

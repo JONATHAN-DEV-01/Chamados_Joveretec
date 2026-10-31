@@ -141,7 +141,7 @@ Em desenvolvimento, o frontend usa `src/environments/environment.ts` (`http://lo
 
 ## 8. Segurança
 
-- [ ] **Trocar a senha do admin inicial** logo após o primeiro login: menu do usuário (canto superior direito) → **Minha conta → Alterar senha**. Depois, troque também o valor de `ADMIN_SENHA` no Render por outro valor aleatório. A variável não é mais usada, mas precisa existir, e assim a senha antiga não fica guardada lá.
+- [ ] **Trocar a senha do admin inicial** logo após o primeiro login: nome do usuário (canto superior direito) ou **Meu perfil** na barra lateral → **Alterar senha**. Depois, troque também o valor de `ADMIN_SENHA` no Render por outro valor aleatório. A variável não é mais usada, mas precisa existir, e assim a senha antiga não fica guardada lá.
 - [ ] **Chaves JWT de produção** geradas só para produção (passo 2), nunca reutilizadas de dev/test e fora do Git. **Ainda há cópias de `jwt-privada.pem` e `jwt-publica.pem` na raiz do projeto local:** guarde a privada num cofre e apague as duas.
 - [x] **CORS** restrito ao domínio final da Vercel (passo 5). Nunca use `*`. *Conferido em 30/10.*
 - [x] **Buckets do Storage privados**, com a política restritiva, e **RLS ligado** em todas as tabelas de `public`. *Conferido em 30/10.* A `chamado_responsavel` (V4) tinha ficado sem RLS e exposta à API REST do Supabase; a V7 corrige. **Toda tabela nova precisa de `ENABLE ROW LEVEL SECURITY` na própria migration**: as da V1 a V3 tiveram o RLS ligado à mão no painel.
@@ -184,7 +184,7 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 ## 10. Não implementado / melhorias futuras
 
 - **Sessão:** não há refresh token nem revogação. O token vale até expirar (8h). Um usuário desativado continua *lendo* até lá, mas qualquer alteração já retorna 403.
-- **Recuperação de senha** ("esqueci minha senha") e convite por e-mail. Hoje o admin define a senha inicial e o usuário a troca em *Minha conta*.
+- **Recuperação de senha** ("esqueci minha senha") e convite por e-mail. Hoje o admin define a senha inicial e o usuário a troca em *Meu perfil*.
 - **Notificações** (e-mail, push ou integração com chat) quando um chamado é atribuído, recebe acompanhamento ou muda de status.
 - **Acompanhamentos privados** (visíveis só para a equipe interna ou para admins).
 - **Antivírus nos anexos** (ex.: varredura assíncrona após o upload, com quarentena antes de liberar o download).
@@ -200,7 +200,7 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 
 ## 11. Problemas conhecidos e decisões que merecem revisão
 
-- **Testes:** todos passando. Backend: **143** (`./mvnw test`). Frontend: **129** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
+- **Testes:** todos passando. Backend: **149** (`./mvnw test`). Frontend: **135** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
 - **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. Na época, o upload TUS contra um Supabase real não pôde ser testado. **Ele já foi validado em produção** (passo 9.5). O contrato com a API REST do Storage também tem testes contra um servidor falso.
 - **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage. O mesmo vale para arquivos colados na descrição de um **novo chamado** que acabou não sendo criado (ficam em `rascunhos/usuarios/{id}/`).
 - **Armazenamento `local`** é só para desenvolvimento: no Render o disco é efêmero e os arquivos somem a cada deploy. Em produção use sempre `supabase`, que já é o padrão.

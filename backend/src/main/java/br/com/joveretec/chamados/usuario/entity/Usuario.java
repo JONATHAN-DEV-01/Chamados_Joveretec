@@ -12,6 +12,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.Optional;
 
 @Entity
 @Table(name = "usuario")
@@ -41,6 +42,19 @@ public class Usuario {
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
+    /* Paleta pessoal: as quatro colunas são todas nulas (segue a global) ou todas preenchidas (V8). */
+    @Column(name = "paleta_fundo", length = 7)
+    private String paletaFundo;
+
+    @Column(name = "paleta_superficie", length = 7)
+    private String paletaSuperficie;
+
+    @Column(name = "paleta_destaque", length = 7)
+    private String paletaDestaque;
+
+    @Column(name = "paleta_texto", length = 7)
+    private String paletaTexto;
+
     @UpdateTimestamp
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
@@ -67,6 +81,26 @@ public class Usuario {
 
     public void alterarSenhaHash(String senhaHash) {
         this.senhaHash = senhaHash;
+    }
+
+    public void definirPaleta(PaletaPessoal paleta) {
+        this.paletaFundo = paleta.fundo();
+        this.paletaSuperficie = paleta.superficie();
+        this.paletaDestaque = paleta.destaque();
+        this.paletaTexto = paleta.texto();
+    }
+
+    /** Volta a seguir a paleta global do sistema. */
+    public void removerPaleta() {
+        this.paletaFundo = null;
+        this.paletaSuperficie = null;
+        this.paletaDestaque = null;
+        this.paletaTexto = null;
+    }
+
+    public Optional<PaletaPessoal> getPaleta() {
+        return paletaFundo == null ? Optional.empty()
+                : Optional.of(new PaletaPessoal(paletaFundo, paletaSuperficie, paletaDestaque, paletaTexto));
     }
 
     public void desativar() {

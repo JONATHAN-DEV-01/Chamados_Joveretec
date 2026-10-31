@@ -66,10 +66,12 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'conta',
-        title: 'Minha conta',
-        loadComponent: () => import('./features/conta/minha-conta').then((m) => m.MinhaConta),
+        path: 'perfil',
+        title: 'Meu perfil',
+        loadComponent: () => import('./features/perfil/meu-perfil').then((m) => m.MeuPerfil),
       },
+      // "Minha conta" (dados e senha) passou a fazer parte de "Meu perfil".
+      { path: 'conta', redirectTo: 'perfil' },
     ],
   },
   { path: '**', redirectTo: '' },

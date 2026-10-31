@@ -1,3 +1,5 @@
+import { Paleta } from '../models/configuracao';
+
 const HEX = /^#[0-9a-f]{6}$/i;
 
 export function corHexValida(valor: string | null | undefined): boolean {
@@ -19,4 +21,20 @@ export function contraste(hexA: string, hexB: string): number {
 /** Preto ou branco, o que tiver mais contraste sobre a cor informada (texto de botões). */
 export function textoSobre(hex: string): '#000000' | '#FFFFFF' {
   return contraste(hex, '#000000') >= contraste(hex, '#FFFFFF') ? '#000000' : '#FFFFFF';
+}
+
+/** Avisos de legibilidade (WCAG): texto ≥ 4,5:1 e destaque ≥ 3:1 sobre o fundo. */
+export function avisosDeLegibilidade(paleta: Partial<Paleta>): string[] {
+  const { fundo, texto, destaque } = paleta;
+  if (!corHexValida(fundo) || !corHexValida(texto) || !corHexValida(destaque)) {
+    return [];
+  }
+  const avisos: string[] = [];
+  if (contraste(texto!, fundo!) < 4.5) {
+    avisos.push('O texto tem pouco contraste com o fundo e pode ficar difícil de ler.');
+  }
+  if (contraste(destaque!, fundo!) < 3) {
+    avisos.push('A cor de destaque se confunde com o fundo (botões e urgências perdem visibilidade).');
+  }
+  return avisos;
 }

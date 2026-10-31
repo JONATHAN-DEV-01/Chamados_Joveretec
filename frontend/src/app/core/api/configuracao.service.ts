@@ -31,6 +31,6 @@ export class ConfiguracaoService {
   private usar(configuracao: Configuracao): void {
     // Um backend anterior (sem limites de anexo) pode responder durante o deploy.
     this._atual.set({ ...configuracao, anexos: configuracao.anexos ?? CONFIGURACAO_PADRAO.anexos });
-    this.tema.aplicar(configuracao.paleta);
+    this.tema.definirGlobal(configuracao.paleta);
   }
 }

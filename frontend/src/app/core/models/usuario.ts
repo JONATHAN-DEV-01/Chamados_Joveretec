@@ -1,3 +1,4 @@
+import { Paleta } from './configuracao';
 export type Perfil = 'ADMIN' | 'DESENVOLVEDOR';
 
 export interface Usuario {
@@ -7,6 +8,8 @@ export interface Usuario {
   perfil: Perfil;
   ativo: boolean;
   criadoEm: string;
+  /** Paleta pessoal: só vem para o próprio usuário (login e `/me`); `null` = segue a global. */
+  paleta?: Paleta | null;
 }
 
 export interface LoginResponse {

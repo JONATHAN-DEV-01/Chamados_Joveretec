@@ -5,6 +5,7 @@ import br.com.joveretec.chamados.comum.paginacao.Pagina;
 import br.com.joveretec.chamados.comum.paginacao.Paginacao;
 import br.com.joveretec.chamados.comum.seguranca.HashDeSenha;
 import br.com.joveretec.chamados.usuario.entity.FiltroUsuarios;
+import br.com.joveretec.chamados.usuario.entity.PaletaPessoal;
 import br.com.joveretec.chamados.usuario.entity.Perfil;
 import br.com.joveretec.chamados.usuario.entity.Usuario;
 import br.com.joveretec.chamados.usuario.entity.UsuarioRepository;
@@ -96,6 +97,18 @@ public class UsuarioService {
         Usuario usuario = buscar(id);
         usuario.reativar();
         return usuario;
+    }
+
+    @Transactional
+    public PaletaPessoal definirPropriaPaleta(Long usuarioId, PaletaPessoal paleta) {
+        Usuario usuario = buscarAutor(usuarioId);
+        usuario.definirPaleta(paleta);
+        return usuario.getPaleta().orElseThrow();
+    }
+
+    @Transactional
+    public void removerPropriaPaleta(Long usuarioId) {
+        buscarAutor(usuarioId).removerPaleta();
     }
 
     @Transactional

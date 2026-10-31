@@ -30,6 +30,7 @@ export class Shell {
     { rota: '/chamados', rotulo: 'Chamados' },
     { rota: '/chamados/novo', rotulo: 'Novo chamado' },
     { rota: '/fila', rotulo: 'Fila do projeto' },
+    { rota: '/perfil', rotulo: 'Meu perfil' },
   ];
 
   /** Visível só para ADMIN (as rotas também têm guard e o backend valida o perfil). */

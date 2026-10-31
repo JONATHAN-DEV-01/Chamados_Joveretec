@@ -1,0 +1,64 @@
+<header class="cabecalho-pagina">
+  <h1>Meu perfil</h1>
+</header>
+
+@if (auth.usuario(); as usuario) {
+  <section class="cartao dados" aria-label="Seus dados">
+    <div><span class="rotulo">Nome</span><p>{{ usuario.nome }}</p></div>
+    <div><span class="rotulo">E-mail</span><p>{{ usuario.email }}</p></div>
+    <div><span class="rotulo">Perfil</span><p>{{ usuario.perfil | rotuloPerfil }}</p></div>
+  </section>
+}
+
+<form class="cartao paleta" [formGroup]="formularioPaleta" (ngSubmit)="salvarPaleta()" novalidate aria-labelledby="titulo-paleta">
+  <div class="paleta-campos">
+    <h2 id="titulo-paleta">Minha paleta de cores</h2>
+    <p class="dica situacao">
+      @if (restaurando()) {
+        Ao salvar, você volta a usar a paleta padrão do sistema.
+      } @else if (usaPaletaPessoal()) {
+        Você está usando uma paleta pessoal. Ela vale só para você e não muda a tela de login.
+      } @else {
+        Você está usando a paleta padrão do sistema. Escolha cores e salve para ter a sua.
+      }
+    </p>
+    <app-campos-de-paleta [grupo]="formularioPaleta" [paleta]="paleta()" [desabilitado]="salvandoPaleta()" />
+    <div class="acoes">
+      <button type="submit" class="btn btn-primario" [disabled]="salvandoPaleta() || formularioPaleta.pristine">
+        {{ salvandoPaleta() ? 'Salvando…' : 'Salvar' }}
+      </button>
+      <button type="button" class="btn" (click)="restaurarPadrao()" [disabled]="salvandoPaleta()">Restaurar padrão</button>
+    </div>
+  </div>
+  <div class="paleta-previa">
+    <h3>Pré-visualização</h3>
+    <app-previa-de-paleta [paleta]="paleta()" [nomeSistema]="nomeSistema()" />
+  </div>
+</form>
+
+<section class="cartao senha" aria-labelledby="titulo-senha">
+  <h2 id="titulo-senha">Alterar senha</h2>
+  <form [formGroup]="formularioSenha" (ngSubmit)="salvarSenha()" novalidate>
+    <div class="campo">
+      <label for="senhaAtual">Senha atual</label>
+      <input id="senhaAtual" type="password" formControlName="senhaAtual" autocomplete="current-password" />
+      <app-erro-campo [controle]="formularioSenha.controls.senhaAtual" />
+    </div>
+    <div class="campo">
+      <label for="novaSenha">Nova senha</label>
+      <input id="novaSenha" type="password" formControlName="novaSenha" autocomplete="new-password" />
+      <span class="dica">Entre 8 e 72 caracteres.</span>
+      <app-erro-campo [controle]="formularioSenha.controls.novaSenha" />
+    </div>
+    <div class="campo">
+      <label for="confirmacao">Confirmar nova senha</label>
+      <input id="confirmacao" type="password" formControlName="confirmacao" autocomplete="new-password" />
+      @if (formularioSenha.hasError('senhasDiferentes') && formularioSenha.controls.confirmacao.touched) {
+        <span class="erro" role="alert">As senhas não conferem.</span>
+      }
+    </div>
+    <div class="acoes">
+      <button type="submit" class="btn btn-primario" [disabled]="salvandoSenha()">Alterar senha</button>
+    </div>
+  </form>
+</section>
