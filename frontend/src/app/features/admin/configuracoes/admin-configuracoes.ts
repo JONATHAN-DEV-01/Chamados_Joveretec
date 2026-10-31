@@ -111,7 +111,9 @@ export class AdminConfiguracoes {
   }
 
   protected restaurarPadrao(): void {
-    this.formulario.setValue(structuredClone(CONFIGURACAO_PADRAO));
+    // Só os campos do formulário: a configuração também traz os limites de anexo, que não são editáveis.
+    const { paleta, geral } = structuredClone(CONFIGURACAO_PADRAO);
+    this.formulario.setValue({ paleta, geral });
     this.formulario.markAsDirty();
   }
 
