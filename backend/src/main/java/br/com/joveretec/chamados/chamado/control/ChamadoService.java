@@ -186,6 +186,29 @@ public class ChamadoService {
         return chamado;
     }
 
+    /**
+     * Exclusão lógica (só admin, garantido no resource): o chamado some de todas as telas, mas
+     * continua no banco com histórico, acompanhamentos e anexos. Se estava na fila, ela é
+     * renumerada sem buracos.
+     */
+    @Transactional
+    public void excluir(Long id, Long adminId) {
+        Usuario admin = usuarios.buscarAutor(adminId);
+        Chamado chamado = buscarParaAlteracao(id);
+        Long projetoId = chamado.getProjeto().getId();
+        if (chamado.estaNaFila()) {
+            projetos.buscarAtivoParaAlteracao(projetoId);
+            chamados.recarregar(chamado); // posição atual, depois de bloquear o projeto
+        }
+        Integer saiu = chamado.getPosicao();
+        chamado.excluir(admin);
+        if (saiu != null) {
+            // O update em lote faz o flush da linha acima antes (excluído e sem posição juntos).
+            chamados.deslocarPosicoes(projetoId, saiu + 1, Integer.MAX_VALUE, -1);
+        }
+        LOG.infof("Chamado id=%d excluído (lógico) pelo usuário id=%d.", id, adminId);
+    }
+
     /** Carrega o chamado com suas relações e garante que o projeto dele não está arquivado. */
     public Chamado buscarParaAlteracao(Long id) {
         Chamado chamado = buscar(id);

@@ -47,8 +47,8 @@ Abra `http://localhost:4200` e entre com o admin de desenvolvimento. O frontend 
 
 ## Testes
 ```bash
-cd backend  && ./mvnw test           # 156 testes (API contra PostgreSQL real; requer Docker)
-cd frontend && npm run test:ci       # 146 testes unitários (Vitest)
+cd backend  && ./mvnw test           # 164 testes (API contra PostgreSQL real; requer Docker)
+cd frontend && npm run test:ci       # 149 testes unitários (Vitest)
 ```
 O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os dois em todo push e pull request, além do build da imagem Docker e do build de produção do frontend. O [`manter-acordado.yml`](.github/workflows/manter-acordado.yml) chama o health check do backend a cada 10 minutos, para o Render gratuito não hibernar.
 
@@ -77,7 +77,7 @@ Resumo; a lista completa com request/response está em [docs/PLANO.md](docs/PLAN
 | Auth | `POST /api/auth/login`, `GET /api/auth/me`, `PUT /api/auth/me/senha`, `PUT/DELETE /api/auth/me/paleta` (paleta pessoal), `PUT /api/auth/me/novidades` |
 | Usuários | `GET/POST /api/usuarios`, `GET/PUT /api/usuarios/{id}`, `POST /api/usuarios/{id}/desativar` · `/reativar` |
 | Projetos | `GET/POST /api/projetos`, `GET/PUT /api/projetos/{id}`, `POST /api/projetos/{id}/arquivar` · `/desarquivar` |
-| Chamados | `GET/POST /api/chamados`, `GET/PUT /api/chamados/{id}`, `PATCH .../status`, `POST .../atribuir-a-mim`, `PUT .../posicao`, `GET .../historico` |
+| Chamados | `GET/POST /api/chamados`, `GET/PUT /api/chamados/{id}`, `DELETE /api/chamados/{id}` (admin, exclusão lógica), `PATCH .../status`, `POST .../atribuir-a-mim`, `PUT .../posicao`, `GET .../historico` |
 | Feed | `GET /api/chamados/{id}/feed`, `POST/PUT/DELETE /api/chamados/{id}/acompanhamentos[/{acompId}]`, `POST .../acompanhamentos/rascunhos` |
 | Anexos | `POST /api/chamados/{id}/anexos` (autoriza o envio), `POST /api/anexos/rascunhos` (antes de o chamado existir), `POST /api/anexos/{id}/confirmar`, `GET /api/anexos/{id}/download`, `GET /api/anexos/links?ids=` (vários de uma vez), `DELETE /api/anexos/{id}` |
 | Dashboard | `GET /api/dashboard/por-status` · `/por-urgencia` · `/por-desenvolvedor` · `/meus-chamados` · `/ultimas-atualizacoes` · `/tempos` |

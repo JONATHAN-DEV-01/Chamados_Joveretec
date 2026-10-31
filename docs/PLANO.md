@@ -94,6 +94,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | criado_por_id | bigint FK → usuario | not null |
 | versao | bigint | lock otimista (evita sobrescrever edição concorrente → 409) |
 | criado_em / atualizado_em | timestamptz | |
+| excluido_em / excluido_por_id | timestamptz / bigint FK → usuario | exclusão lógica (V11, só admin): preenchidos juntos; excluído não tem posição e não aparece em nenhuma consulta da API |
 | ultima_atividade_em | timestamptz | edições + acompanhamentos + anexos; atualizada por *bulk update*, que não incrementa `versao` (assim um acompanhamento novo não gera 409 em quem está editando), V3 |
 
 Índices:
@@ -275,6 +276,7 @@ HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome },
 | PUT | `/api/chamados/{id}` | Autenticado | `{ titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), versao }` | `200 ChamadoDTO` · 409 versão desatualizada |
 | PATCH | `/api/chamados/{id}/status` | Autenticado | `{ status }` — concluir tira da fila (sem buraco); reabrir coloca no fim | `200 ChamadoDTO` |
 | POST | `/api/chamados/{id}/atribuir-a-mim` | Autenticado | — (inclui quem chamou entre os responsáveis, sem tirar os demais) | `200 ChamadoDTO` |
+| DELETE | `/api/chamados/{id}` | **Admin** | — | `204`: exclusão lógica. O chamado some de todas as telas (lista, fila, dashboard, feed, detalhe e anexos passam a dar 404), mas continua no banco; se estava na fila, ela é renumerada · 403 dev · 404 já excluído · 422 projeto arquivado |
 | PUT | `/api/chamados/{id}/posicao` | Autenticado | `{ posicao }` (1..n entre os ativos) | `200 ChamadoDTO` · 422 fora do intervalo ou chamado concluído |
 | GET | `/api/chamados/{id}/historico?pagina&tamanho` | Autenticado | — | `200 Página<HistoricoDTO>` (mais recente primeiro) |
 
@@ -385,6 +387,7 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 | `AuthResourceTest` (10) | login, e-mail sem diferenciar maiúsculas, senha errada/e-mail inexistente (mesma mensagem), validação, usuário inativo, sem token/token inválido → 401, `/me`, troca de senha |
 | `PermissoesTest` (6) | dev recebe 403 em usuários/projetos/configurações; dev consulta tudo; admin gerencia; usuário desativado com token válido → 403 |
 | `ChamadoResourceTest` (16) | criação no fim e em posição informada, validação, urgência inválida, JSON malformado, posição fora da fila, atribuição a outro/autoatribuição, "atribuir a mim" + histórico, responsável inativo, status, edição com histórico só do que mudou, lock otimista (409), reordenação para cima/baixo e limites, projeto arquivado, 404 |
+| `ExclusaoChamadoTest` (8) | só admin exclui; some do detalhe, da lista, da fila (sem buraco), do feed e do histórico; some do dashboard (status, meus chamados, por desenvolvedor, tempos e últimas atualizações); não aceita acompanhamento nem entrega anexos; continua no banco com quem e quando; excluir de novo 404; concluído não mexe na fila; projeto arquivado 422 |
 | `FiltrosChamadoTest` (12) | ordenação por urgência+posição e por posição, cada filtro, filtros combinados, busca em título/descrição, paginação, limites de página, enum inválido |
 | `DashboardResourceTest` (4) | por status (com zeros), por urgência, por desenvolvedor, meus chamados |
 | `TemposChamadoTest` (7) | tempo total e em andamento no detalhe (com idas e voltas de status), não concluído conta até agora, médias só dos concluídos, chamado com vários responsáveis conta para cada um, abertos há mais tempo em ordem, projeto sem concluídos (médias nulas), concluído sem evento de status usa a última atualização |

@@ -100,3 +100,10 @@ h1 {
   align-items: center;
   gap: 8px;
 }
+
+.acoes-cabecalho {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

@@ -160,9 +160,14 @@ public class AnexoService {
                 .toList();
     }
 
-    /** Rascunho de chamado (ainda não criado) só é visível para quem o enviou. */
+    /** Rascunho de chamado (ainda não criado) só é visível para quem o enviou; de chamado excluído, para ninguém. */
     private static boolean visivelPara(Anexo anexo, Long usuarioId) {
-        return anexo.isConcluido() && (!anexo.isRascunhoDeChamado() || anexo.getEnviadoPor().getId().equals(usuarioId));
+        if (!anexo.isConcluido()) {
+            return false;
+        }
+        return anexo.isRascunhoDeChamado()
+                ? anexo.getEnviadoPor().getId().equals(usuarioId)
+                : !anexo.getChamado().isExcluido();
     }
 
     private LinkDeDownload link(Anexo anexo, boolean inline) {

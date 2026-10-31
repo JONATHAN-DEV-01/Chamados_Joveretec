@@ -22,9 +22,16 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
         return "exists (select 1 from c.responsaveis resp where resp.id = :" + parametro + ")";
     }
 
-    /** Busca o chamado já com projeto, autor e responsáveis carregados (uma única consulta). */
+    /** Condição "o chamado c não foi excluído" (os excluídos não aparecem em nenhuma tela). */
+    public static final String NAO_EXCLUIDO = "c.excluidoEm is null";
+
+    /**
+     * Busca o chamado já com projeto, autor e responsáveis carregados (uma única consulta).
+     * Chamado excluído conta como inexistente.
+     */
     public Optional<Chamado> buscarCompleto(Long id) {
-        return find(DE_CHAMADO_COM_RELACOES + "join fetch c.criadoPor left join fetch c.responsaveis where c.id = ?1", id)
+        return find(DE_CHAMADO_COM_RELACOES + "join fetch c.criadoPor left join fetch c.responsaveis where c.id = ?1 and "
+                + NAO_EXCLUIDO, id)
                 .firstResultOptional();
     }
 
@@ -108,6 +115,7 @@ public class ChamadoRepository implements PanacheRepository<Chamado> {
 
     private CondicoesConsulta condicoesDo(FiltroChamados filtro) {
         return new CondicoesConsulta()
+                .se(true, NAO_EXCLUIDO)
                 .igual("c.projeto.id = :projetoId", "projetoId", filtro.projetoId())
                 .igual(temResponsavel("responsavelId"), "responsavelId", filtro.responsavelId())
                 .se(filtro.semResponsavel(), "c.responsaveis is empty")

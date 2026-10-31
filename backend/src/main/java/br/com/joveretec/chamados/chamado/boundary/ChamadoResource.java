@@ -22,6 +22,7 @@ import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.BeanParam;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
@@ -107,6 +108,14 @@ public class ChamadoResource {
     public ChamadoDTO reordenar(@PathParam("id") Long id,
                                 @Valid @NotNull(message = CORPO_OBRIGATORIO) ReordenarRequest requisicao) {
         return detalhe(chamados.reordenar(id, requisicao.posicao(), usuarioLogado.id()));
+    }
+
+    /** Exclusão lógica: o chamado some para todos, mas continua no banco. Só administradores. */
+    @DELETE
+    @Path("/{id}")
+    @RolesAllowed(Perfil.ROLE_ADMIN)
+    public void excluir(@PathParam("id") Long id) {
+        chamados.excluir(id, usuarioLogado.id());
     }
 
     @GET

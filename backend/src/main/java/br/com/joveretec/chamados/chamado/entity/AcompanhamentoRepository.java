@@ -39,7 +39,7 @@ public class AcompanhamentoRepository implements PanacheRepository<Acompanhament
     /** Acompanhamentos mais recentes dos chamados em que o usuário é responsável ou autor. */
     public List<Acompanhamento> ultimosDosChamadosDoUsuario(Long usuarioId, int limite) {
         return find("from Acompanhamento a join fetch a.autor join fetch a.chamado c"
-                        + " where a.situacao = :publicado"
+                        + " where a.situacao = :publicado and " + ChamadoRepository.NAO_EXCLUIDO
                         + " and (" + ChamadoRepository.temResponsavel("usuarioId") + " or c.criadoPor.id = :usuarioId)"
                         + " order by a.criadoEm desc, a.id desc",
                 Parameters.with("publicado", Situacao.PUBLICADO).and("usuarioId", usuarioId))

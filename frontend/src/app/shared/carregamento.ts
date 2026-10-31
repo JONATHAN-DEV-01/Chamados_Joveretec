@@ -29,6 +29,11 @@ export interface OpcoesDeCarregamento {
 /** Resultados guardados pelas telas que pedem `cache` (os mais antigos saem primeiro). */
 const resultadosGuardados = new CacheEmMemoria<unknown>(30);
 
+/** Descarta os resultados guardados (ex.: depois de excluir um chamado, para ele não reaparecer). */
+export function esquecerResultadosGuardados(): void {
+  resultadosGuardados.limpar();
+}
+
 /**
  * Busca dados sempre que os parâmetros mudam (cancelando a requisição anterior) e expõe
  * o estado como signals. Deve ser chamada em contexto de injeção (campo ou construtor).

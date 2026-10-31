@@ -95,6 +95,14 @@ public class Chamado {
     @Column(name = "ultima_atividade_em", nullable = false)
     private Instant ultimaAtividadeEm;
 
+    /** Exclusão lógica (só admin): o chamado some de todas as telas, mas continua no banco. */
+    @Column(name = "excluido_em")
+    private Instant excluidoEm;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "excluido_por_id")
+    private Usuario excluidoPor;
+
     protected Chamado() {
     }
 
@@ -153,6 +161,17 @@ public class Chamado {
     /** Sai da fila (ao ser concluído). */
     public void sairDaFila() {
         this.posicao = null;
+    }
+
+    /** Esconde o chamado de todos; sai da fila (quem chama fecha o buraco nas posições). */
+    public void excluir(Usuario admin) {
+        this.excluidoEm = Instant.now();
+        this.excluidoPor = admin;
+        this.posicao = null;
+    }
+
+    public boolean isExcluido() {
+        return excluidoEm != null;
     }
 
     public boolean estaNaFila() {

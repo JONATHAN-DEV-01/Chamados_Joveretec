@@ -30,7 +30,7 @@ public class TemposRepository {
             WITH alvo AS (
                 SELECT c.id, c.titulo, c.status, c.urgencia, c.criado_em, c.atualizado_em
                   FROM chamado c
-                 WHERE %s
+                 WHERE c.excluido_em IS NULL AND %s
             ),
             eventos AS (
                 SELECT h.chamado_id, h.alterado_em, h.valor_anterior, h.valor_novo,

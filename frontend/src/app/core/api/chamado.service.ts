@@ -43,6 +43,11 @@ export class ChamadoService {
     return this.http.post<Chamado>(`${this.url}/${id}/atribuir-a-mim`, null).pipe(map(comResponsaveis));
   }
 
+  /** Exclusão lógica (só admin): some para todos, mas continua no banco. */
+  excluir(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}`);
+  }
+
   reordenar(id: number, posicao: number): Observable<Chamado> {
     return this.http.put<Chamado>(`${this.url}/${id}/posicao`, { posicao }).pipe(map(comResponsaveis));
   }

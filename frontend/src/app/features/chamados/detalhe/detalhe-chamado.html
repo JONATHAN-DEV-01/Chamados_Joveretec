@@ -16,9 +16,19 @@
         </span>
       </div>
     </div>
-    @if (!souResponsavel() && !projetoArquivado()) {
-      <button type="button" class="btn" (click)="atribuirAMim()">Atribuir a mim</button>
-    }
+    <div class="acoes-cabecalho">
+      @if (!souResponsavel() && !projetoArquivado()) {
+        <button type="button" class="btn" (click)="atribuirAMim()">Atribuir a mim</button>
+      }
+      @if (isAdmin() && !projetoArquivado()) {
+        <app-botao-confirmar
+          texto="Excluir chamado"
+          textoConfirmacao="Confirmar exclusão"
+          [desabilitado]="excluindo()"
+          (confirmado)="excluir()"
+        />
+      }
+    </div>
   </header>
 
   @if (projetoArquivado()) {

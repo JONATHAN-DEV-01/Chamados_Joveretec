@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, linkedSignal, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Observable, catchError, distinctUntilChanged, filter, of, switchMap } from 'rxjs';
 import { ApiErro } from '../../../core/api/api-erro';
 import { ChamadoService } from '../../../core/api/chamado.service';
@@ -11,8 +11,9 @@ import { UsuarioService } from '../../../core/api/usuario.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Chamado, STATUS, StatusChamado, URGENCIAS, Urgencia } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
-import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
+import { carregarComParametros, esquecerResultadosGuardados, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { BotaoConfirmar } from '../../../shared/componentes/botao-confirmar';
 import { Esqueleto } from '../../../shared/componentes/esqueleto';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
@@ -26,6 +27,7 @@ import { FeedChamado } from './feed/feed-chamado';
   selector: 'app-detalhe-chamado',
   imports: [
     ReactiveFormsModule,
+    BotaoConfirmar,
     Esqueleto,
     RouterLink,
     DatePipe,
@@ -51,7 +53,12 @@ export class DetalheChamado {
   private readonly servico = inject(ChamadoService);
   private readonly projetos = inject(ProjetoService);
   private readonly notificacao = inject(NotificacaoService);
-  protected readonly usuarioLogado = inject(AuthService).usuario;
+  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
+  protected readonly usuarioLogado = this.auth.usuario;
+  /** Excluir chamado é exclusivo do administrador (o backend também valida). */
+  protected readonly isAdmin = this.auth.isAdmin;
+  protected readonly excluindo = signal(false);
   protected readonly usuarios = listaDeApoio(inject(UsuarioService).listarAtivos());
 
   protected readonly URGENCIAS = URGENCIAS;
@@ -154,6 +161,26 @@ export class DetalheChamado {
 
   protected alterarStatus(status: StatusChamado): void {
     this.executar((id) => this.servico.alterarStatus(id, status), 'Status atualizado.');
+  }
+
+  /** Exclusão lógica: o chamado some para todos (continua no banco) e voltamos à lista. */
+  protected excluir(): void {
+    const chamado = this.chamado();
+    if (!chamado) {
+      return;
+    }
+    this.excluindo.set(true);
+    this.servico.excluir(chamado.id).subscribe({
+      next: () => {
+        esquecerResultadosGuardados();
+        this.notificacao.sucesso(`Chamado #${chamado.id} excluído.`);
+        void this.router.navigate(['/chamados']);
+      },
+      error: (erro: unknown) => {
+        this.notificacao.erro(erro);
+        this.excluindo.set(false);
+      },
+    });
   }
 
   protected atribuirAMim(): void {
