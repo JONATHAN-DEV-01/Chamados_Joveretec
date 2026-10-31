@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -37,11 +38,13 @@ public class AnexoService {
     private final UsuarioService usuarios;
     private final HistoricoService historico;
     private final ArmazenamentoArquivos armazenamento;
+    private final LimitesDeAnexo limites;
     private final Duration validadeDownload;
     private final Duration expiracaoPendentes;
 
     public AnexoService(AnexoRepository anexos, AcompanhamentoRepository acompanhamentos, ChamadoService chamados,
                         UsuarioService usuarios, HistoricoService historico, ArmazenamentoArquivos armazenamento,
+                        LimitesDeAnexo limites,
                         @ConfigProperty(name = "armazenamento.validade-download") Duration validadeDownload,
                         @ConfigProperty(name = "armazenamento.pendentes.expiram-apos") Duration expiracaoPendentes) {
         this.anexos = anexos;
@@ -50,11 +53,12 @@ public class AnexoService {
         this.usuarios = usuarios;
         this.historico = historico;
         this.armazenamento = armazenamento;
+        this.limites = limites;
         this.validadeDownload = validadeDownload;
         this.expiracaoPendentes = expiracaoPendentes;
     }
 
-    /** Pedido do navegador antes do envio. Sem limite de tamanho na aplicação (vale o do Storage). */
+    /** Pedido do navegador antes do envio (tamanho e extensão passam por {@link LimitesDeAnexo}). */
     public record PedidoDeEnvio(String nome, String tipoMime, long tamanhoBytes, Long acompanhamentoId) {
     }
 
@@ -64,6 +68,9 @@ public class AnexoService {
     public record LinkDeDownload(String url, Instant expiraEm) {
     }
 
+    public record LinkDoAnexo(Long anexoId, LinkDeDownload link) {
+    }
+
     /**
      * Registra o anexo como PENDENTE e autoriza o envio direto ao armazenamento. Anexos de
      * acompanhamento vão para um rascunho do próprio usuário; os da abertura, para o chamado
@@ -71,6 +78,7 @@ public class AnexoService {
      */
     @Transactional
     public EnvioAutorizado solicitarEnvio(Long chamadoId, PedidoDeEnvio pedido, Long usuarioId) {
+        limites.validar(pedido.nome(), pedido.tamanhoBytes());
         Usuario usuario = usuarios.buscarAutor(usuarioId);
         Chamado chamado = chamados.buscarParaAlteracao(chamadoId);
         Acompanhamento rascunho = pedido.acompanhamentoId() == null
@@ -90,6 +98,22 @@ public class AnexoService {
         return new EnvioAutorizado(anexo, armazenamento.autorizarEnvio(anexo.getCaminho(), anexo.getTipoMime()));
     }
 
+    /**
+     * Envio para um chamado que ainda está sendo escrito (colar/arrastar na descrição do novo
+     * chamado): o anexo nasce sem chamado e é ligado a ele na criação ({@code anexoIds}).
+     */
+    @Transactional
+    public EnvioAutorizado solicitarEnvioDeRascunho(PedidoDeEnvio pedido, Long usuarioId) {
+        limites.validar(pedido.nome(), pedido.tamanhoBytes());
+        Usuario usuario = usuarios.buscarAutor(usuarioId);
+        String pasta = CaminhoDoAnexo.pastaDeRascunho(usuario.getId());
+        Anexo anexo = new Anexo(null, null, nomeOriginal(pedido.nome()), tipoMime(pedido.tipoMime()),
+                pedido.tamanhoBytes(), usuario, pasta);
+        anexos.persist(anexo);
+        anexo.definirCaminho(CaminhoDoAnexo.arquivo(pasta, anexo.getId(), anexo.getNomeOriginal()));
+        return new EnvioAutorizado(anexo, armazenamento.autorizarEnvio(anexo.getCaminho(), anexo.getTipoMime()));
+    }
+
     /** Depois do envio: confere o objeto no armazenamento e marca o anexo como CONCLUIDO. */
     @Transactional
     public Anexo confirmar(Long anexoId, Long usuarioId) {
@@ -101,22 +125,47 @@ public class AnexoService {
         if (anexo.isConcluido()) {
             return anexo;
         }
-        chamados.buscarParaAlteracao(anexo.getChamado().getId());
+        if (!anexo.isRascunhoDeChamado()) {
+            chamados.buscarParaAlteracao(anexo.getChamado().getId());
+        }
         long tamanho = armazenamento.tamanho(anexo.getCaminho()).orElseThrow(() ->
                 ExcecaoDeNegocio.regraDeNegocio("O arquivo ainda não chegou ao armazenamento. Envie-o novamente."));
+        // O tamanho declarado no pedido pode não ser o real; o arquivo grande demais fica PENDENTE e
+        // é apagado (banco e Storage) pela rotina de limpeza.
+        limites.validarTamanho(tamanho);
         anexo.concluir(tamanho);
-        if (anexo.isDaAbertura()) {
+        if (anexo.isDaAbertura() && !anexo.isRascunhoDeChamado()) {
             registrarNoFeed(anexo, usuario, CampoHistorico.ANEXO_ADICIONADO, null, anexo.getNomeOriginal());
         }
         return anexo;
     }
 
     /** Link temporário (assinado) para baixar ou pré-visualizar o anexo. */
-    public LinkDeDownload linkDeDownload(Long anexoId, boolean inline) {
+    public LinkDeDownload linkDeDownload(Long anexoId, boolean inline, Long usuarioId) {
         Anexo anexo = buscar(anexoId);
-        if (!anexo.isConcluido()) {
+        if (!visivelPara(anexo, usuarioId)) {
             throw ExcecaoDeNegocio.naoEncontrado("Anexo não encontrado.");
         }
+        return link(anexo, inline);
+    }
+
+    /**
+     * Links de vários anexos de uma vez (miniaturas no texto do chamado e dos acompanhamentos).
+     * Ids inexistentes, pendentes ou rascunhos de outra pessoa são ignorados.
+     */
+    public List<LinkDoAnexo> linksDeDownload(Collection<Long> anexoIds, boolean inline, Long usuarioId) {
+        return anexos.buscarVarios(anexoIds).stream()
+                .filter(anexo -> visivelPara(anexo, usuarioId))
+                .map(anexo -> new LinkDoAnexo(anexo.getId(), link(anexo, inline)))
+                .toList();
+    }
+
+    /** Rascunho de chamado (ainda não criado) só é visível para quem o enviou. */
+    private static boolean visivelPara(Anexo anexo, Long usuarioId) {
+        return anexo.isConcluido() && (!anexo.isRascunhoDeChamado() || anexo.getEnviadoPor().getId().equals(usuarioId));
+    }
+
+    private LinkDeDownload link(Anexo anexo, boolean inline) {
         String url = armazenamento.urlDeDownload(anexo.getCaminho(), anexo.getNomeOriginal(), inline, validadeDownload);
         return new LinkDeDownload(url, Instant.now().plus(validadeDownload));
     }
@@ -126,6 +175,13 @@ public class AnexoService {
     public void excluir(Long anexoId, Long usuarioId) {
         Usuario usuario = usuarios.buscarAutor(usuarioId);
         Anexo anexo = buscar(anexoId);
+        if (anexo.isRascunhoDeChamado()) {
+            if (!anexo.enviadoPor(usuario)) {
+                throw ExcecaoDeNegocio.naoEncontrado("Anexo não encontrado.");
+            }
+            excluirTodos(List.of(anexo));
+            return;
+        }
         chamados.buscarParaAlteracao(anexo.getChamado().getId());
         RegrasDeAutoria.garantir(anexo.getEnviadoPor(), usuario,
                 "Só quem enviou o arquivo ou um administrador pode excluí-lo.");
@@ -165,7 +221,7 @@ public class AnexoService {
             acompanhamentos.delete(rascunho);
             removidos += doRascunho.size();
         }
-        List<Anexo> pendentes = anexos.pendentesCriadosAntesDe(limite);
+        List<Anexo> pendentes = anexos.abandonadosAntesDe(limite);
         excluirTodos(pendentes);
         removidos += pendentes.size();
         if (removidos > 0) {

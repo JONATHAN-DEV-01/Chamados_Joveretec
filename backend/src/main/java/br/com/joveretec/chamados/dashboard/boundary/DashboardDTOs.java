@@ -56,7 +56,8 @@ public final class DashboardDTOs {
 
         /** Primeiros caracteres do texto, em uma linha e sem a marcação do Markdown. */
         private static String resumo(String texto) {
-            String linha = texto.replaceAll("(?m)^\\s*([-*+]|\\d+\\.)\\s+", "")
+            String linha = texto.replaceAll("!?\\[([^\\]]*)]\\(anexo:\\d+\\)", "📎 $1")
+                    .replaceAll("(?m)^\\s*([-*+]|\\d+\\.)\\s+", "")
                     .replaceAll("[*_`#>~]", "")
                     .replaceAll("\\s+", " ")
                     .strip();

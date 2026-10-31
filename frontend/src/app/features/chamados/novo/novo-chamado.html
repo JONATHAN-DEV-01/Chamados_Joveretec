@@ -34,7 +34,14 @@
 
   <div class="campo">
     <label for="descricao">Descrição</label>
-    <textarea id="descricao" formControlName="descricao" rows="8"></textarea>
+    <app-editor-com-anexos
+      idCampo="descricao"
+      [controle]="formulario.controls.descricao"
+      [fila]="envios"
+      [linhas]="8"
+      [desabilitado]="salvando()"
+      placeholder="Descreva o problema. Prints e arquivos podem ser colados (Ctrl+V), arrastados ou anexados pelo clipe."
+    />
     <app-erro-campo [controle]="formulario.controls.descricao" />
   </div>
 
@@ -63,24 +70,14 @@
     </span>
   </div>
 
-  <div class="campo">
-    <span class="rotulo">Anexos (opcional)</span>
-    <app-area-de-anexos [fila]="envios" idCampo="anexos-chamado" [desabilitada]="salvando()" />
+  <div class="acoes">
+    <button type="submit" class="btn btn-primario" [disabled]="salvando() || aguardandoEnvios()">
+      {{ salvando() ? 'Salvando…' : 'Criar chamado' }}
+    </button>
+    @if (envios.comErro()) {
+      <span class="dica">Remova ou retome os arquivos com falha para criar o chamado.</span>
+    } @else if (envios.pendente()) {
+      <span class="dica">Aguardando o envio dos arquivos…</span>
+    }
   </div>
-
-  @if (criado(); as chamado) {
-    <div class="alerta alerta-info enviando" role="status">
-      <span>
-        Chamado #{{ chamado.id }} criado.
-        {{ envios.comErro() ? 'Alguns anexos falharam: retome ou remova-os.' : 'Enviando os anexos…' }}
-      </span>
-      <a class="btn btn-pequeno" [routerLink]="['/chamados', chamado.id]">Ir para o chamado</a>
-    </div>
-  } @else {
-    <div class="acoes">
-      <button type="submit" class="btn btn-primario" [disabled]="salvando()">
-        {{ salvando() ? 'Salvando…' : 'Criar chamado' }}
-      </button>
-    </div>
-  }
 </form>

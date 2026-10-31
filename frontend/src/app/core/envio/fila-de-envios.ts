@@ -24,12 +24,13 @@ export class FilaDeEnvios {
     private readonly fabrica: FabricaDeTransporte = criarTransporte,
   ) {}
 
-  adicionar(arquivos: Iterable<File>): void {
+  adicionar(arquivos: Iterable<File>): EnvioDeArquivo[] {
     const novos = Array.from(arquivos, (arquivo) => new EnvioDeArquivo(arquivo, this.anexos, this.fabrica));
     this._envios.update((atuais) => [...atuais, ...novos]);
     if (this.destino) {
       novos.forEach((envio) => envio.iniciar(this.destino!()));
     }
+    return novos;
   }
 
   /** Define o destino (ex.: o chamado recém-criado) e envia o que estava aguardando. */

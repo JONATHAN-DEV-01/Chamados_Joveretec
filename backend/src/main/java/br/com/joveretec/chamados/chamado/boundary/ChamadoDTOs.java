@@ -118,11 +118,18 @@ public final class ChamadoDTOs {
             List<Long> responsavelIds,
             Long responsavelId,
             @Min(value = 1, message = "A posição deve ser maior ou igual a 1.")
-            Integer posicao) {
+            Integer posicao,
+            /* Anexos colados/arrastados na descrição antes de o chamado existir (POST /api/anexos/rascunhos). */
+            @Size(max = 50, message = "Um chamado pode ser aberto com no máximo 50 anexos.")
+            List<Long> anexoIds) {
 
         NovoChamado paraComando() {
+            Set<Long> anexos = new LinkedHashSet<>();
+            if (anexoIds != null) {
+                anexoIds.stream().filter(Objects::nonNull).forEach(anexos::add);
+            }
             return new NovoChamado(projetoId, titulo, descricao, urgencia,
-                    idsDosResponsaveis(responsavelIds, responsavelId), posicao);
+                    idsDosResponsaveis(responsavelIds, responsavelId), posicao, anexos);
         }
     }
 

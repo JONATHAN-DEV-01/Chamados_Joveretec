@@ -1,5 +1,5 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FeedService } from '../../../../core/api/feed.service';
 import { Acompanhamento, Anexo, TipoAcompanhamento } from '../../../../core/models/feed';
@@ -9,14 +9,15 @@ import { BotaoConfirmar } from '../../../../shared/componentes/botao-confirmar';
 import { DuracaoPipe, TempoRelativoPipe } from '../../../../shared/formatos';
 import { ErroCampo } from '../../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../../shared/formularios/erros-servidor';
-import { MarkdownPipe } from '../../../../shared/markdown';
+import { naoReferenciados } from '../../../../shared/anexos-no-texto';
+import { ConteudoComAnexos } from '../../../../shared/componentes/conteudo-com-anexos';
 import { ListaAnexos } from './lista-anexos';
 
 /** Card de um acompanhamento no feed, com edição e exclusão para quem tem permissão. */
 @Component({
   selector: 'app-card-acompanhamento',
   imports: [ReactiveFormsModule, DatePipe, Avatar, BotaoConfirmar, DuracaoPipe, TempoRelativoPipe, ErroCampo,
-    MarkdownPipe, ListaAnexos],
+    ConteudoComAnexos, ListaAnexos],
   templateUrl: './card-acompanhamento.html',
   styleUrl: './feed.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,6 +33,10 @@ export class CardAcompanhamento {
   private readonly feed = inject(FeedService);
   private readonly notificacao = inject(NotificacaoService);
   protected readonly editando = signal(false);
+  /** Os citados no texto aparecem no lugar; o resto (inclusive do modelo antigo) fica na lista. */
+  protected readonly anexosForaDoTexto = computed(() =>
+    naoReferenciados(this.acompanhamento().texto, this.acompanhamento().anexos),
+  );
   protected readonly salvando = signal(false);
 
   protected readonly formulario = inject(NonNullableFormBuilder).group({

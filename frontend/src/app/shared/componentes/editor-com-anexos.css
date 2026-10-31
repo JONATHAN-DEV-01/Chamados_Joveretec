@@ -1,0 +1,86 @@
+:host {
+  display: block;
+}
+
+.editor {
+  position: relative;
+  border: 1px solid var(--cor-borda);
+  border-radius: var(--raio);
+  background: var(--cor-fundo);
+  transition: border-color 0.15s;
+}
+
+.editor:focus-within {
+  outline: 2px solid var(--cor-destaque);
+  outline-offset: 1px;
+}
+
+.editor.arrastando {
+  border-color: var(--cor-destaque);
+}
+
+/* A borda e o foco ficam no contêiner, para o clipe parecer parte do campo. */
+.editor textarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  padding: 8px 10px 4px;
+  border: 0;
+  border-radius: var(--raio) var(--raio) 0 0;
+  background: transparent;
+  color: var(--cor-texto);
+  font: inherit;
+  resize: vertical;
+  outline: none;
+}
+
+.barra-editor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 4px 4px 10px;
+}
+
+.barra-editor .dica {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clipe {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.clipe:hover:not(.desabilitado),
+.barra-editor:has(input:focus-visible) .clipe {
+  background: var(--cor-painel-forte);
+}
+
+.barra-editor:has(input:focus-visible) .clipe {
+  outline: 2px solid var(--cor-destaque);
+}
+
+.clipe.desabilitado {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.soltar-aqui {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--raio);
+  background: color-mix(in srgb, var(--cor-destaque-suave) 85%, transparent);
+  color: var(--cor-texto);
+  font-weight: 600;
+  pointer-events: none;
+}

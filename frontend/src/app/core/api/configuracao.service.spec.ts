@@ -11,6 +11,7 @@ describe('ConfiguracaoService', () => {
   const personalizada: Configuracao = {
     paleta: { fundo: '#000000', superficie: '#222222', destaque: '#00AAFF', texto: '#FFFFFF' },
     geral: { nomeSistema: 'Meu Sistema', tamanhoPaginaPadrao: 50 },
+    anexos: { tamanhoMaximoBytes: 1024, extensoesBloqueadas: ['exe'] },
   };
 
   beforeEach(() => {

@@ -1,24 +1,3 @@
-<div
-  class="zona"
-  [class.arrastando]="arrastando()"
-  [class.desabilitada]="desabilitada()"
-  (dragover)="sobre($event)"
-  (dragleave)="arrastando.set(false)"
-  (drop)="soltar($event)"
->
-  <span aria-hidden="true">📎</span>
-  <span>Arraste arquivos para cá ou</span>
-  <label class="btn btn-pequeno" [for]="idCampo()">escolha no computador</label>
-  <input
-    [id]="idCampo()"
-    type="file"
-    multiple
-    class="sr-only"
-    [disabled]="desabilitada()"
-    (change)="selecionar($event)"
-  />
-</div>
-
 @if (!fila().vazia()) {
   <ul class="envios" aria-live="polite">
     @for (envio of fila().envios(); track envio) {
@@ -38,7 +17,7 @@
             <button
               type="button"
               class="btn btn-fantasma btn-pequeno"
-              (click)="fila().remover(envio)"
+              (click)="remover.emit(envio)"
               [attr.aria-label]="'Remover ' + envio.arquivo.name"
             >
               ✕

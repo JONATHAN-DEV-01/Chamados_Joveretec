@@ -18,9 +18,23 @@ export interface PedidoDeEnvio {
 export class AnexoService {
   private readonly http = inject(HttpClient);
 
-  /** Registra o anexo (PENDENTE) e recebe a autorização para enviar o arquivo direto ao armazenamento. */
-  solicitarEnvio(chamadoId: number, pedido: PedidoDeEnvio): Observable<EnvioAutorizado> {
-    return this.http.post<EnvioAutorizado>(urlApi(`/chamados/${chamadoId}/anexos`), pedido);
+  /**
+   * Registra o anexo (PENDENTE) e recebe a autorização para enviar o arquivo direto ao armazenamento.
+   * Sem `chamadoId` (chamado ainda sendo escrito), o anexo nasce como rascunho e é ligado na criação.
+   */
+  solicitarEnvio(chamadoId: number | null, pedido: PedidoDeEnvio): Observable<EnvioAutorizado> {
+    const url = chamadoId === null ? urlApi('/anexos/rascunhos') : urlApi(`/chamados/${chamadoId}/anexos`);
+    return this.http.post<EnvioAutorizado>(url, pedido);
+  }
+
+  /** Links assinados de vários anexos numa chamada só (miniaturas no texto), por id. */
+  links(anexoIds: number[], inline = true): Observable<Map<number, string>> {
+    return this.http
+      .get<{ anexoId: number; url: string }[]>(urlApi('/anexos/links'), {
+        params: parametros({ ids: anexoIds.join(','), inline }),
+        context: new HttpContext().set(SEM_INDICADOR, true),
+      })
+      .pipe(map((links) => new Map(links.map(({ anexoId, url }) => [anexoId, urlAbsoluta(url)]))));
   }
 
   confirmar(anexoId: number): Observable<Anexo> {

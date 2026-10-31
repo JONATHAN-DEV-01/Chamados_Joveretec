@@ -1,6 +1,7 @@
 package br.com.joveretec.chamados.chamado.boundary;
 
 import br.com.joveretec.chamados.chamado.boundary.FeedDTOs.AnexoDTO;
+import br.com.joveretec.chamados.chamado.control.AnexoService.LinkDoAnexo;
 import br.com.joveretec.chamados.chamado.control.AnexoService.PedidoDeEnvio;
 import br.com.joveretec.chamados.comum.armazenamento.AutorizacaoEnvio;
 import jakarta.validation.constraints.Min;
@@ -16,7 +17,7 @@ public final class AnexoDTOs {
     private AnexoDTOs() {
     }
 
-    /** Sem limite de tamanho na aplicação: quem limita é o Storage (Global file size limit). */
+    /** Tamanho e extensão são validados em {@code LimitesDeAnexo}. */
     public record SolicitarEnvioRequest(
             @NotBlank(message = "O nome do arquivo é obrigatório.")
             @Size(max = 1000, message = "O nome do arquivo é longo demais.")
@@ -48,5 +49,12 @@ public final class AnexoDTOs {
     }
 
     public record DownloadDTO(String url, Instant expiraEm) {
+    }
+
+    public record LinkDTO(Long anexoId, String url, Instant expiraEm) {
+
+        static LinkDTO de(LinkDoAnexo link) {
+            return new LinkDTO(link.anexoId(), link.link().url(), link.link().expiraEm());
+        }
     }
 }

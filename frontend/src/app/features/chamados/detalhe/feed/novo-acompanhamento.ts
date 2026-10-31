@@ -7,14 +7,14 @@ import { DestinoDoEnvio } from '../../../../core/envio/envio-de-arquivo';
 import { filaDeEnvios } from '../../../../core/envio/fila-de-envios';
 import { Acompanhamento, TipoAcompanhamento } from '../../../../core/models/feed';
 import { NotificacaoService } from '../../../../core/notificacao/notificacao.service';
-import { AreaDeAnexos } from '../../../../shared/componentes/area-de-anexos';
+import { EditorComAnexos } from '../../../../shared/componentes/editor-com-anexos';
 import { ErroCampo } from '../../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../../shared/formularios/erros-servidor';
 
 /** Caixa de novo acompanhamento, fixa no fim do feed. Ctrl+Enter publica. */
 @Component({
   selector: 'app-novo-acompanhamento',
-  imports: [ReactiveFormsModule, ErroCampo, AreaDeAnexos],
+  imports: [ReactiveFormsModule, ErroCampo, EditorComAnexos],
   templateUrl: './novo-acompanhamento.html',
   styleUrl: './feed.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -71,6 +71,8 @@ export interface CriarChamadoRequest {
   urgencia: Urgencia;
   responsavelIds: number[];
   posicao: number | null;
+  /** Rascunhos enviados pela descrição (colar/arrastar), ligados ao chamado na criação. */
+  anexoIds: number[];
 }
 
 export interface AtualizarChamadoRequest {

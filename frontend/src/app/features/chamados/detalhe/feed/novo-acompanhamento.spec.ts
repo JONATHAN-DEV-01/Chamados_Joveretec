@@ -79,7 +79,7 @@ describe('NovoAcompanhamento', () => {
 
   it('Ctrl+Enter publica', async () => {
     digitar('Atalho');
-    elemento.querySelector('textarea')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true }));
+    elemento.querySelector('textarea')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));
     await fixture.whenStable();
     expect(feed.publicar).toHaveBeenCalledTimes(1);
   });

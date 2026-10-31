@@ -12,10 +12,17 @@ import java.util.Optional;
 @ApplicationScoped
 public class AnexoRepository implements PanacheRepository<Anexo> {
 
-    /** Com chamado, projeto, quem enviou e (se houver) o acompanhamento já carregados. */
+    /** Com chamado e projeto (se houver: rascunhos não têm), quem enviou e o acompanhamento já carregados. */
     public Optional<Anexo> buscarCompleto(Long id) {
-        return find("from Anexo x join fetch x.chamado c join fetch c.projeto join fetch x.enviadoPor"
+        return find("from Anexo x left join fetch x.chamado c left join fetch c.projeto join fetch x.enviadoPor"
                 + " left join fetch x.acompanhamento where x.id = ?1", id).firstResultOptional();
+    }
+
+    public List<Anexo> buscarVarios(Collection<Long> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return find("from Anexo x left join fetch x.chamado join fetch x.enviadoPor where x.id in ?1", ids).list();
     }
 
     public List<Anexo> concluidosDaAbertura(Long chamadoId) {
@@ -36,7 +43,8 @@ public class AnexoRepository implements PanacheRepository<Anexo> {
         return list("acompanhamento.id", acompanhamentoId);
     }
 
-    public List<Anexo> pendentesCriadosAntesDe(Instant limite) {
-        return list("status = ?1 and criadoEm < ?2", Status.PENDENTE, limite);
+    /** Pendentes (upload abandonado) e rascunhos de chamado nunca criado, mais antigos que o limite. */
+    public List<Anexo> abandonadosAntesDe(Instant limite) {
+        return list("(status = ?1 or chamado is null) and criadoEm < ?2", Status.PENDENTE, limite);
     }
 }

@@ -33,8 +33,9 @@ public class Anexo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "chamado_id", nullable = false, updatable = false)
+    /** {@code null} enquanto for rascunho de um chamado ainda não criado (ver {@link #vincularAoChamado}). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chamado_id")
     private Chamado chamado;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -105,6 +106,16 @@ public class Anexo {
 
     public boolean isDaAbertura() {
         return acompanhamento == null;
+    }
+
+    /** Enviado para um chamado que ainda está sendo escrito (sem chamado). */
+    public boolean isRascunhoDeChamado() {
+        return chamado == null;
+    }
+
+    /** Liga o rascunho à abertura do chamado recém-criado (o arquivo continua no mesmo caminho). */
+    public void vincularAoChamado(Chamado chamado) {
+        this.chamado = chamado;
     }
 
     public boolean enviadoPor(Usuario usuario) {

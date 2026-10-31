@@ -1,5 +1,6 @@
 package br.com.joveretec.chamados.configuracao.boundary;
 
+import br.com.joveretec.chamados.chamado.control.LimitesDeAnexo;
 import br.com.joveretec.chamados.configuracao.control.Configuracoes;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -9,11 +10,18 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
 import java.util.Locale;
 
+/** {@code anexos} é só leitura (vem do application.properties) e é ignorado no PUT. */
 public record ConfiguracaoDTO(
         @NotNull(message = "A paleta é obrigatória.") @Valid PaletaDTO paleta,
-        @NotNull(message = "As configurações gerais são obrigatórias.") @Valid GeralDTO geral) {
+        @NotNull(message = "As configurações gerais são obrigatórias.") @Valid GeralDTO geral,
+        AnexosDTO anexos) {
+
+    /** Limites dos anexos, para o navegador avisar antes de enviar (o backend valida de novo). */
+    public record AnexosDTO(long tamanhoMaximoBytes, List<String> extensoesBloqueadas) {
+    }
 
     private static final String HEX = "^#[0-9A-Fa-f]{6}$";
     private static final String MENSAGEM_HEX = "Use uma cor hexadecimal no formato #RRGGBB.";
@@ -35,11 +43,12 @@ public record ConfiguracaoDTO(
             Integer tamanhoPaginaPadrao) {
     }
 
-    public static ConfiguracaoDTO de(Configuracoes configuracoes) {
+    public static ConfiguracaoDTO de(Configuracoes configuracoes, LimitesDeAnexo limites) {
         Configuracoes.Paleta p = configuracoes.paleta();
         Configuracoes.Geral g = configuracoes.geral();
         return new ConfiguracaoDTO(new PaletaDTO(p.fundo(), p.superficie(), p.destaque(), p.texto()),
-                new GeralDTO(g.nomeSistema(), g.tamanhoPaginaPadrao()));
+                new GeralDTO(g.nomeSistema(), g.tamanhoPaginaPadrao()),
+                new AnexosDTO(limites.tamanhoMaximoBytes(), limites.extensoesBloqueadas()));
     }
 
     public Configuracoes paraConfiguracoes() {

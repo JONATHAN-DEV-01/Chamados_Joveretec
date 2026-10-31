@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -8,10 +8,11 @@ import { ProjetoService, TAMANHO_MAXIMO } from '../../../core/api/projeto.servic
 import { UsuarioService } from '../../../core/api/usuario.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { filaDeEnvios } from '../../../core/envio/fila-de-envios';
-import { Chamado, ChamadoResumo, STATUS_DA_FILA, URGENCIAS, Urgencia } from '../../../core/models/chamado';
+import { ChamadoResumo, STATUS_DA_FILA, URGENCIAS, Urgencia } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { listaDeApoio } from '../../../shared/carregamento';
-import { AreaDeAnexos } from '../../../shared/componentes/area-de-anexos';
+import { idsReferenciados } from '../../../shared/anexos-no-texto';
+import { EditorComAnexos } from '../../../shared/componentes/editor-com-anexos';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
 import { RotuloUrgenciaPipe } from '../../../shared/rotulos';
@@ -19,7 +20,7 @@ import { SeletorResponsaveis } from '../seletor-responsaveis';
 
 @Component({
   selector: 'app-novo-chamado',
-  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsaveis, AreaDeAnexos],
+  imports: [ReactiveFormsModule, RouterLink, ErroCampo, RotuloUrgenciaPipe, SeletorResponsaveis, EditorComAnexos],
   templateUrl: './novo-chamado.html',
   styleUrl: './novo-chamado.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,9 +39,12 @@ export class NovoChamado implements OnInit {
   protected readonly projetos = listaDeApoio(inject(ProjetoService).listarParaSelecao());
   protected readonly usuarios = listaDeApoio(inject(UsuarioService).listarAtivos());
   protected readonly salvando = signal(false);
-  /** Anexos da abertura: escolhidos antes e enviados logo depois de o chamado ser criado. */
-  protected readonly envios = filaDeEnvios();
-  protected readonly criado = signal<Chamado | null>(null);
+  /**
+   * Arquivos colados/arrastados na descrição: sobem na hora como rascunhos (o chamado ainda não
+   * existe) e são ligados a ele na criação.
+   */
+  protected readonly envios = filaDeEnvios(() => of({ chamadoId: null, acompanhamentoId: null }));
+  protected readonly aguardandoEnvios = computed(() => this.envios.pendente() || this.envios.comErro());
 
   protected readonly formulario = inject(NonNullableFormBuilder).group({
     projetoId: ['', Validators.required],
@@ -61,16 +65,6 @@ export class NovoChamado implements OnInit {
   );
   protected readonly fimDaFila = computed(() => this.fila().length + 1);
 
-  constructor() {
-    // Com o chamado criado e todos os anexos enviados, segue para o detalhe.
-    effect(() => {
-      const chamado = this.criado();
-      if (chamado && this.envios.prontos()) {
-        void this.router.navigate(['/chamados', chamado.id]);
-      }
-    });
-  }
-
   ngOnInit(): void {
     const projetoId = this.projetoId();
     if (projetoId) {
@@ -79,6 +73,9 @@ export class NovoChamado implements OnInit {
   }
 
   protected salvar(): void {
+    if (this.aguardandoEnvios()) {
+      return;
+    }
     if (this.formulario.invalid) {
       this.formulario.markAllAsTouched();
       return;
@@ -93,13 +90,13 @@ export class NovoChamado implements OnInit {
         urgencia: valor.urgencia,
         responsavelIds: valor.responsavelIds,
         posicao: valor.posicao ? Number(valor.posicao) : null,
+        anexoIds: this.anexosCitados(valor.descricao),
       })
       .subscribe({
         next: (criado) => {
           this.notificacao.sucesso('Chamado criado.');
-          this.formulario.disable();
-          this.criado.set(criado);
-          this.envios.iniciarTodos(() => of({ chamadoId: criado.id, acompanhamentoId: null }));
+          this.envios.limpar();
+          void this.router.navigate(['/chamados', criado.id]);
         },
         error: (erro: unknown) => {
           if (!aplicarErrosDoServidor(this.formulario, erro)) {
@@ -108,6 +105,12 @@ export class NovoChamado implements OnInit {
           this.salvando.set(false);
         },
       });
+  }
+
+  /** Só os enviados por este formulário e ainda citados no texto (os apagados do texto ficam de fora). */
+  private anexosCitados(descricao: string): number[] {
+    const enviados = new Set(this.envios.envios().map((envio) => envio.anexo()?.id));
+    return idsReferenciados(descricao).filter((id) => enviados.has(id));
   }
 
   private carregarFila(projetoId: number) {

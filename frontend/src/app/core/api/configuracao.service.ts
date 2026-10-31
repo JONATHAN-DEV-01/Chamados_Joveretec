@@ -23,12 +23,14 @@ export class ConfiguracaoService {
     );
   }
 
-  salvar(configuracao: Configuracao): Observable<Configuracao> {
+  /** Os limites de anexo são só leitura: o servidor os ignora no PUT. */
+  salvar(configuracao: Pick<Configuracao, 'paleta' | 'geral'>): Observable<Configuracao> {
     return this.http.put<Configuracao>(this.url, configuracao).pipe(tap((salva) => this.usar(salva)));
   }
 
   private usar(configuracao: Configuracao): void {
-    this._atual.set(configuracao);
+    // Um backend anterior (sem limites de anexo) pode responder durante o deploy.
+    this._atual.set({ ...configuracao, anexos: configuracao.anexos ?? CONFIGURACAO_PADRAO.anexos });
     this.tema.aplicar(configuracao.paleta);
   }
 }

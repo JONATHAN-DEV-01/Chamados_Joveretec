@@ -1,0 +1,41 @@
+<div
+  class="editor"
+  [class.arrastando]="arrastando()"
+  (dragover)="sobre($event)"
+  (dragleave)="arrastando.set(false)"
+  (drop)="soltar($event)"
+>
+  <textarea
+    #campo
+    [id]="idCampo()"
+    [formControl]="controle()"
+    [rows]="linhas()"
+    [placeholder]="placeholder()"
+    (paste)="colar($event)"
+  ></textarea>
+  <div class="barra-editor">
+    <span class="dica">Cole prints com Ctrl+V ou arraste arquivos para cá</span>
+    <label
+      class="clipe"
+      [class.desabilitado]="desabilitado()"
+      [for]="idCampo() + '-arquivos'"
+      title="Anexar arquivos do computador"
+    >
+      <span aria-hidden="true">📎</span>
+      <span class="sr-only">Anexar arquivos</span>
+    </label>
+    <input
+      [id]="idCampo() + '-arquivos'"
+      type="file"
+      multiple
+      class="sr-only"
+      [disabled]="desabilitado()"
+      (change)="selecionar($event)"
+    />
+  </div>
+  @if (arrastando()) {
+    <div class="soltar-aqui" aria-hidden="true">Solte para anexar</div>
+  }
+</div>
+
+<app-lista-de-envios [fila]="fila()" (remover)="remover($event)" />

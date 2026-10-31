@@ -7,9 +7,12 @@ import { Transporte, criarTransporte } from './transporte';
 
 export type EstadoEnvio = 'aguardando' | 'preparando' | 'enviando' | 'pausado' | 'confirmando' | 'concluido' | 'erro';
 
-/** Para onde vai o anexo: abertura do chamado (acompanhamentoId null) ou rascunho de acompanhamento. */
+/**
+ * Para onde vai o anexo: abertura do chamado (acompanhamentoId null), rascunho de acompanhamento
+ * ou, com chamadoId null, rascunho de um chamado ainda sendo escrito.
+ */
 export interface DestinoDoEnvio {
-  chamadoId: number;
+  chamadoId: number | null;
   acompanhamentoId: number | null;
 }
 

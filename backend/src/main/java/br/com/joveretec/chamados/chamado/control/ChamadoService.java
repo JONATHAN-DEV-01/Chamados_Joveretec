@@ -1,6 +1,8 @@
 package br.com.joveretec.chamados.chamado.control;
 
 import br.com.joveretec.chamados.chamado.entity.AcompanhamentoRepository;
+import br.com.joveretec.chamados.chamado.entity.Anexo;
+import br.com.joveretec.chamados.chamado.entity.AnexoRepository;
 import br.com.joveretec.chamados.chamado.entity.CampoHistorico;
 import br.com.joveretec.chamados.chamado.entity.Chamado;
 import br.com.joveretec.chamados.chamado.entity.ChamadoRepository;
@@ -29,14 +31,17 @@ public class ChamadoService {
 
     private final ChamadoRepository chamados;
     private final AcompanhamentoRepository acompanhamentos;
+    private final AnexoRepository anexos;
     private final HistoricoService historico;
     private final ProjetoService projetos;
     private final UsuarioService usuarios;
 
     public ChamadoService(ChamadoRepository chamados, AcompanhamentoRepository acompanhamentos,
-                          HistoricoService historico, ProjetoService projetos, UsuarioService usuarios) {
+                          AnexoRepository anexos, HistoricoService historico, ProjetoService projetos,
+                          UsuarioService usuarios) {
         this.chamados = chamados;
         this.acompanhamentos = acompanhamentos;
+        this.anexos = anexos;
         this.historico = historico;
         this.projetos = projetos;
         this.usuarios = usuarios;
@@ -79,6 +84,7 @@ public class ChamadoService {
         Chamado chamado = new Chamado(projeto, dados.titulo(), dados.descricao(), dados.urgencia(),
                 responsaveis, autor, posicao);
         chamados.persist(chamado);
+        vincularAnexos(chamado, autor, dados.anexoIds());
         historico.registrarCriacao(chamado, autor);
         LOG.infof("Chamado id=%d criado no projeto id=%d pelo usuário id=%d.", chamado.getId(), projeto.getId(), autorId);
         return chamado;
@@ -178,6 +184,23 @@ public class ChamadoService {
             throw ExcecaoDeNegocio.regraDeNegocio("O projeto está arquivado e não aceita alterações em chamados.");
         }
         return chamado;
+    }
+
+    /**
+     * Liga à abertura os anexos que o autor enviou enquanto escrevia a descrição. Só valem
+     * rascunhos dele, já enviados e ainda sem chamado; qualquer outro id desfaz a criação.
+     */
+    private void vincularAnexos(Chamado chamado, Usuario autor, Set<Long> anexoIds) {
+        List<Anexo> encontrados = anexos.buscarVarios(anexoIds);
+        for (Long anexoId : anexoIds) {
+            Anexo anexo = encontrados.stream()
+                    .filter(a -> a.getId().equals(anexoId))
+                    .filter(a -> a.isRascunhoDeChamado() && a.enviadoPor(autor) && a.isConcluido())
+                    .findFirst()
+                    .orElseThrow(() -> ExcecaoDeNegocio.regraDeNegocio(
+                            "Um dos arquivos da descrição não está mais disponível. Envie-o novamente."));
+            anexo.vincularAoChamado(chamado);
+        }
     }
 
     /**

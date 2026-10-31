@@ -29,8 +29,11 @@
                     {{ item.data | tempoRelativo }}
                   </time>
                 </header>
-                <p class="descricao">{{ item.abertura.descricao }}</p>
-                <app-lista-anexos [anexos]="item.abertura.anexos" (removido)="aoMudarConteudo()" />
+                <app-conteudo-com-anexos [texto]="item.abertura.descricao" [anexos]="item.abertura.anexos" />
+                <app-lista-anexos
+                  [anexos]="foraDoTexto(item.abertura.descricao, item.abertura.anexos)"
+                  (removido)="aoMudarConteudo()"
+                />
               </div>
             </article>
           </li>

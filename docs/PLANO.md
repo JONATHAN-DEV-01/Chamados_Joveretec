@@ -140,11 +140,11 @@ Uma linha por campo alterado.
 
 Índice parcial `(criado_em DESC) WHERE situacao = 'PUBLICADO'`, usado nas "últimas atualizações".
 
-### `anexo` (V3)
+### `anexo` (V3, V6)
 | Coluna | Tipo | Regras |
 |---|---|---|
 | id | bigint PK | |
-| chamado_id | bigint FK → chamado | not null, cascade, indexado |
+| chamado_id | bigint FK → chamado | cascade, indexado. Nulo só enquanto for rascunho de um chamado ainda não criado (V6); um CHECK impede rascunho com acompanhamento |
 | acompanhamento_id | bigint FK → acompanhamento | opcional (vazio = anexo da abertura), cascade, indexado |
 | nome_original | varchar(255) | nome como o usuário enviou |
 | caminho | varchar(1024) | objeto no bucket (ver abaixo) |
@@ -154,7 +154,7 @@ Uma linha por campo alterado.
 | enviado_por_id | bigint FK → usuario | |
 | criado_em / concluido_em | timestamptz | |
 
-**Caminho no bucket `chamados-anexos`:** `projetos/{projetoId}/chamados/{chamadoId}/{origem}/{anexoId}-{nomeSanitizado}`, com `origem` = `abertura` ou `acompanhamentos/{acompanhamentoId}`. O nome é sanitizado: sem diretórios, acentos, espaços ou caracteres especiais, com extensão em minúsculas e até 120 caracteres. Ex.: `Relatório Final (v2).PDF` → `42-Relatorio-Final-v2.pdf`.
+**Caminho no bucket `chamados-anexos`:** `projetos/{projetoId}/chamados/{chamadoId}/{origem}/{anexoId}-{nomeSanitizado}`, com `origem` = `abertura` ou `acompanhamentos/{acompanhamentoId}`. Arquivos enviados antes de o chamado existir ficam em `rascunhos/usuarios/{usuarioId}/{anexoId}-{nomeSanitizado}` e não mudam de lugar ao serem ligados ao chamado. O nome é sanitizado: sem diretórios, acentos, espaços ou caracteres especiais, com extensão em minúsculas e até 120 caracteres. Ex.: `Relatório Final (v2).PDF` → `42-Relatorio-Final-v2.pdf`.
 
 ### `configuracao`
 Chave/valor simples, exposto como objeto estruturado pela API.
@@ -189,8 +189,8 @@ Seed (migration Flyway):
 - **Histórico:** gravado pelo `control` na mesma transação da alteração.
 - **Feed:** a abertura (descrição do chamado) vem sempre primeiro; acompanhamentos publicados e eventos do histórico aparecem intercalados por data. O evento `CRIACAO` fica de fora, porque a abertura já o representa.
 - **Acompanhamentos:** qualquer dev ou admin publica em qualquer chamado; só o **autor ou um admin** edita e exclui. Excluir apaga também os anexos (banco e Storage). Uma Solução com `concluirChamado` muda o status para CONCLUIDO na mesma transação (gera o evento de status). Projeto arquivado bloqueia publicar, editar, excluir, rascunhos e anexos (422).
-- **Anexos:** a aplicação não impõe limite de tamanho (vale o do Storage). Na abertura, só o autor do chamado ou admin anexa; em acompanhamento, só no rascunho do próprio usuário, antes de publicar. Exclui quem enviou ou um admin. Eventos no feed: anexo adicionado à abertura e anexo removido. Os anexos publicados com um acompanhamento aparecem no próprio card, sem evento extra.
-- **Rascunho:** o primeiro arquivo escolhido no compositor cria um rascunho, porque o caminho precisa do id. A publicação exige todos os anexos `CONCLUIDO` (422 caso contrário). Rascunhos e anexos `PENDENTE` com mais de 24h são removidos pela rotina agendada (`LimpezaDeAnexos`, a cada 1h), inclusive no Storage.
+- **Anexos:** limite por arquivo em `anexos.tamanho-maximo-bytes` (padrão 50 MB, o máximo do Supabase Free) e extensões bloqueadas em `anexos.extensoes-bloqueadas` (executáveis), validados no pedido de envio e de novo na confirmação, com o tamanho real no Storage (422). O frontend recebe os limites em `GET /api/configuracoes` e avisa antes de enviar. **Anexos no texto:** a descrição e os acompanhamentos citam anexos em Markdown, `![nome](anexo:ID)` (imagem, vira miniatura que amplia ao clicar) ou `[nome](anexo:ID)` (outros, viram link com nome e tamanho). Anexos não citados no texto, inclusive os do modelo antigo, continuam na lista abaixo dele. No novo chamado, os arquivos sobem antes como rascunho do usuário (`POST /api/anexos/rascunhos`) e são ligados à abertura pelo `anexoIds` da criação; só valem rascunhos concluídos do próprio autor (senão 422 e nada é criado), e só quem enviou enxerga o rascunho. Na abertura, só o autor do chamado ou admin anexa; em acompanhamento, só no rascunho do próprio usuário, antes de publicar. Exclui quem enviou ou um admin. Eventos no feed: anexo adicionado à abertura e anexo removido. Os anexos publicados com um acompanhamento aparecem no próprio card, sem evento extra.
+- **Rascunho:** o primeiro arquivo escolhido no compositor cria um rascunho, porque o caminho precisa do id. A publicação exige todos os anexos `CONCLUIDO` (422 caso contrário). Rascunhos, anexos `PENDENTE` e rascunhos de chamado nunca criado com mais de 24h são removidos pela rotina agendada (`LimpezaDeAnexos`, a cada 1h), inclusive no Storage.
 - **Admin inicial:** criado na inicialização da aplicação (seed em Java, não em SQL) se não existir nenhum admin, lendo `ADMIN_NOME`, `ADMIN_EMAIL`, `ADMIN_SENHA`. Motivo: o hash BCrypt é gerado em Java e a senha nunca fica em script versionado nem afeta o checksum do Flyway.
 
 ## 3. Endpoints
@@ -265,7 +265,7 @@ HistoricoDTO     = { id, campo, valorAnterior, valorNovo, usuario: { id, nome },
 |---|---|---|---|---|
 | GET | `/api/chamados?projetoId&responsavelId&semResponsavel&status&urgencia&busca&ordem&pagina&tamanho` | Autenticado | `status` e `urgencia` aceitam vários valores (`?status=A&status=B` ou `?status=A,B`); `busca` procura em título e descrição (case-insensitive); `ordem` = `URGENCIA` (padrão) ou `POSICAO` | `200 Página<ChamadoResumoDTO>` |
 | GET | `/api/chamados/{id}` | Autenticado | — | `200 ChamadoDTO` |
-| POST | `/api/chamados` | Autenticado | `{ projetoId, titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), posicao? }` | `201 ChamadoDTO` |
+| POST | `/api/chamados` | Autenticado | `{ projetoId, titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), posicao?, anexoIds?: number[] (máx. 50, rascunhos de `POST /api/anexos/rascunhos`) }` | `201 ChamadoDTO` · 422 se um anexo não for rascunho concluído do autor |
 | PUT | `/api/chamados/{id}` | Autenticado | `{ titulo, descricao, urgencia, responsavelIds?: number[] (máx. 20), versao }` | `200 ChamadoDTO` · 409 versão desatualizada |
 | PATCH | `/api/chamados/{id}/status` | Autenticado | `{ status }` — concluir tira da fila (sem buraco); reabrir coloca no fim | `200 ChamadoDTO` |
 | POST | `/api/chamados/{id}/atribuir-a-mim` | Autenticado | — (inclui quem chamou entre os responsáveis, sem tirar os demais) | `200 ChamadoDTO` |
@@ -296,6 +296,8 @@ EnvioDTO          = { protocolo: TUS | PUT, url, cabecalhos, metadados, tamanhoP
 | POST | `/api/chamados/{id}/anexos` | Autenticado (abertura: autor do chamado ou admin) | `{ nome, tipoMime?, tamanhoBytes, acompanhamentoId? }` | `201 { anexo: AnexoDTO (PENDENTE), envio: EnvioDTO }` |
 | POST | `/api/anexos/{id}/confirmar` | Quem enviou | — | `200 AnexoDTO (CONCLUIDO)` · 422 se o objeto ainda não está no Storage |
 | GET | `/api/anexos/{id}/download?inline` | Autenticado | `inline=true` para pré-visualizar imagens | `200 { url, expiraEm }` (URL assinada, 5 min) |
+| POST | `/api/anexos/rascunhos` | Autenticado | `{ nome, tipoMime?, tamanhoBytes }` | `201 { anexo, envio }` (anexo sem chamado, ligado depois pelo `anexoIds` de `POST /api/chamados`) |
+| GET | `/api/anexos/links?ids=1,2&inline` | Autenticado | até 50 ids (`?ids=1&ids=2` também vale) | `200 [{ anexoId, url, expiraEm }]`; ignora inexistentes, pendentes e rascunhos de outra pessoa |
 | DELETE | `/api/anexos/{id}` | Quem enviou ou admin | — | `204` · 403 |
 | PUT/GET | `/api/armazenamento-local/{token}` | Token assinado | só com `ARMAZENAMENTO_TIPO=local` (dev/test); senão 404 | envio / download local |
 
@@ -320,7 +322,8 @@ Todos aceitam `projetoId` opcional. Agregações feitas no banco (`GROUP BY`).
 ### Configurações
 ```
 ConfiguracaoDTO = { paleta: { fundo, superficie, destaque, texto },
-                    geral:  { nomeSistema, tamanhoPaginaPadrao } }
+                    geral:  { nomeSistema, tamanhoPaginaPadrao },
+                    anexos: { tamanhoMaximoBytes, extensoesBloqueadas: string[] } }   // anexos: só leitura, ignorado no PUT
 ```
 
 | Método | Rota | Perfil | Request | Response |
@@ -377,6 +380,7 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 | `AcompanhamentoResourceTest` (15) | publicar, validação, editar ("editado"), outro dev recebe 403, admin edita e exclui, autor exclui, chamado errado 404, Solução concluindo o chamado, só Solução conclui, tempo total, última atividade sem mudar a versão, projeto arquivado bloqueia tudo, últimas atualizações (e resumo sem Markdown) |
 | `FeedResourceTest` (8) | abertura primeiro, intercalação cronológica com eventos (sem `CRIACAO`), ordem DESC, paginação, rascunho fora do feed, permissões por leitor, ordem inválida, 404 |
 | `AnexoFluxoTest` (10) | fluxo completo solicitar → enviar → confirmar → baixar → excluir (com eventos e caminho sanitizado), confirmar sem enviar 422, pendente não baixa, permissões para excluir e para anexar na abertura, link adulterado 403, publicação só depois dos envios, rascunho de outra pessoa, exclusão em cascata (banco + Storage), limpeza de pendentes e rascunhos antigos |
+| `AnexosNoTextoTest` (11) | imagem colada antes de criar o chamado ligada à abertura, rascunho só visível e usável por quem enviou, rascunho não reaproveitado em dois chamados, pendente recusado, limite de tamanho declarado e real, extensão bloqueada, links em lote (ignora pendentes e inexistentes, valida ids), limpeza de rascunhos de chamado nunca criado, limites em `/api/configuracoes`, resumo das últimas atualizações com o nome do anexo |
 | `CaminhoDoAnexoTest` (5) | pasta e caminho; sanitização (acentos, espaços, `../`, extensão, tamanho) |
 | `SupabaseArmazenamentoTest` (7) | contrato com a API REST do Storage contra um servidor HTTP falso: upload assinado (TUS), HEAD, link de download, exclusão em lote, 5xx x 4xx, chaves `sb_secret_`, configuração obrigatória |
 

@@ -7,6 +7,8 @@ import java.util.Locale;
  * Organização dos objetos no bucket:
  * {@code projetos/{projetoId}/chamados/{chamadoId}/{origem}/{anexoId}-{nomeSanitizado}},
  * com {@code origem} = {@code abertura} ou {@code acompanhamentos/{acompanhamentoId}}.
+ * Arquivos enviados antes de o chamado existir ficam em {@code rascunhos/usuarios/{usuarioId}/}
+ * e não mudam de lugar ao serem ligados ao chamado.
  */
 public final class CaminhoDoAnexo {
 
@@ -19,6 +21,10 @@ public final class CaminhoDoAnexo {
     public static String pasta(Long projetoId, Long chamadoId, Long acompanhamentoId) {
         String origem = acompanhamentoId == null ? "abertura" : "acompanhamentos/" + acompanhamentoId;
         return "projetos/" + projetoId + "/chamados/" + chamadoId + "/" + origem + "/";
+    }
+
+    public static String pastaDeRascunho(Long usuarioId) {
+        return "rascunhos/usuarios/" + usuarioId + "/";
     }
 
     public static String arquivo(String pasta, Long anexoId, String nomeOriginal) {

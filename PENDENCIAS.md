@@ -168,7 +168,7 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
    projetos/{projetoId}/chamados/{chamadoId}/acompanhamentos/{acompanhamentoId}/{anexoId}-{nome-sanitizado}
    ```
    As pastas são criadas automaticamente pelos uploads, sem nada para criar à mão.
-3. **Limite de tamanho por arquivo.** A aplicação **não** impõe limite: vale o *Global file size limit* em *Storage → Settings*. No plano **Free** o máximo é **50 MB**; para arquivos maiores é preciso o plano **Pro** ou superior (configurável até **500 GB**). Se o Storage recusar um arquivo pelo tamanho, o usuário vê "O arquivo é maior que o limite permitido pelo armazenamento". Os buckets foram criados sem limite próprio (`file_size_limit = null`), para valer o global.
+3. **Limite de tamanho por arquivo.** A aplicação limita cada arquivo a **50 MB** e bloqueia executáveis (`.exe`, `.bat`, `.msi` etc.), no navegador e no backend. Os valores vêm de `ANEXOS_TAMANHO_MAXIMO_BYTES` e `ANEXOS_EXTENSOES_BLOQUEADAS` (opcionais no Render). Acima disso vale o *Global file size limit* em *Storage → Settings*: no plano **Free** o máximo é **50 MB**; para arquivos maiores é preciso o plano **Pro** ou superior (configurável até **500 GB**). Se o Storage recusar um arquivo pelo tamanho, o usuário vê "O arquivo é maior que o limite permitido pelo armazenamento". Os buckets foram criados sem limite próprio (`file_size_limit = null`), para valer o global. **Ao mudar para o plano Pro e aumentar o limite global, aumente também `ANEXOS_TAMANHO_MAXIMO_BYTES` no Render.**
 4. **Cadastrar as variáveis no Render** (*Environment*):
    - `SUPABASE_URL`: *Project Settings → API → Project URL*.
    - `SUPABASE_SERVICE_ROLE_KEY`: chave **secreta** (`service_role`, ou a nova `sb_secret_…`). **Só no Render.** Nunca na Vercel, no frontend ou no Git.
@@ -188,8 +188,8 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 - **Notificações** (e-mail, push ou integração com chat) quando um chamado é atribuído, recebe acompanhamento ou muda de status.
 - **Acompanhamentos privados** (visíveis só para a equipe interna ou para admins).
 - **Antivírus nos anexos** (ex.: varredura assíncrona após o upload, com quarentena antes de liberar o download).
-- **Limite de tamanho por perfil** (ex.: desenvolvedores até X MB, admins sem limite), validado no pedido de envio. Hoje vale só o limite global do Storage.
-- Adicionar anexos a um acompanhamento **já publicado** (hoje os anexos entram só ao criar o acompanhamento, ou na abertura do chamado).
+- **Limite de tamanho por perfil** (ex.: desenvolvedores até X MB, admins sem limite), validado no pedido de envio. Hoje o limite é o mesmo para todos (50 MB).
+- Adicionar anexos a um acompanhamento **já publicado**, ou ao editar a descrição de um chamado existente (hoje os anexos entram ao abrir o chamado ou ao escrever um acompanhamento novo; a edição da descrição aceita as referências já existentes, mas não tem o clipe nem o colar).
 - **Exclusão** de chamados, usuários ou projetos (hoje só arquivar/desativar, para preservar o histórico).
 - **Listas de seleção com mais de 100 itens:** os selects de projeto e responsável e a tela de fila carregam até 100 registros, o limite de página do backend. Com equipes ou projetos maiores, trocar por campos com busca (autocomplete) e paginar a fila.
 - **Busca textual** usa `ILIKE` sem índice. Para volume grande, criar `pg_trgm` e um índice GIN em `titulo`/`descricao`.
@@ -200,9 +200,9 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 
 ## 11. Problemas conhecidos e decisões que merecem revisão
 
-- **Testes:** todos passando. Backend: **125** (`./mvnw test`). Frontend: **113** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
+- **Testes:** todos passando. Backend: **136** (`./mvnw test`). Frontend: **125** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
 - **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. Na época, o upload TUS contra um Supabase real não pôde ser testado. **Ele já foi validado em produção** (passo 9.5). O contrato com a API REST do Storage também tem testes contra um servidor falso.
-- **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage.
+- **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage. O mesmo vale para arquivos colados na descrição de um **novo chamado** que acabou não sendo criado (ficam em `rascunhos/usuarios/{id}/`).
 - **Armazenamento `local`** é só para desenvolvimento: no Render o disco é efêmero e os arquivos somem a cada deploy. Em produção use sempre `supabase`, que já é o padrão.
 - **"Mostrar itens anteriores" no feed** pagina a partir do mais recente. Se alguém publicar enquanto você navega por páginas antigas, um item pode aparecer repetido ou ser pulado até recarregar a página.
 - **Datas relativas** ("há 5 minutos") são calculadas na renderização e não se atualizam sozinhas com a página parada.

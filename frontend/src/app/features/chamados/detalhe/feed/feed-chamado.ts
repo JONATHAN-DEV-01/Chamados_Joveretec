@@ -4,6 +4,8 @@ import { ApiErro } from '../../../../core/api/api-erro';
 import { FeedService } from '../../../../core/api/feed.service';
 import { Acompanhamento, ItemFeed } from '../../../../core/models/feed';
 import { Avatar } from '../../../../shared/componentes/avatar';
+import { naoReferenciados } from '../../../../shared/anexos-no-texto';
+import { ConteudoComAnexos } from '../../../../shared/componentes/conteudo-com-anexos';
 import { TempoRelativoPipe } from '../../../../shared/formatos';
 import { CardAcompanhamento } from './card-acompanhamento';
 import { chaveDoItem, descreverEvento } from './eventos';
@@ -19,7 +21,7 @@ const TAMANHO_PAGINA = 20;
  */
 @Component({
   selector: 'app-feed-chamado',
-  imports: [DatePipe, Avatar, TempoRelativoPipe, CardAcompanhamento, ListaAnexos, NovoAcompanhamento],
+  imports: [DatePipe, Avatar, TempoRelativoPipe, CardAcompanhamento, ConteudoComAnexos, ListaAnexos, NovoAcompanhamento],
   templateUrl: './feed-chamado.html',
   styleUrl: './feed.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,6 +46,8 @@ export class FeedChamado {
   protected readonly temAnteriores = computed(() => this.itens().length < this.total());
   protected readonly chave = chaveDoItem;
   protected readonly descrever = descreverEvento;
+  /** Anexos da abertura que não estão citados na descrição (inclui os do modelo antigo). */
+  protected readonly foraDoTexto = naoReferenciados;
 
   constructor() {
     effect(() => {

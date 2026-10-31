@@ -42,9 +42,9 @@
         </div>
       </form>
     } @else {
-      <div class="texto-markdown" [innerHTML]="a.texto | markdown"></div>
+      <app-conteudo-com-anexos [texto]="a.texto" [anexos]="a.anexos" />
     }
 
-    <app-lista-anexos [anexos]="a.anexos" (removido)="anexoRemovido.emit($event)" />
+    <app-lista-anexos [anexos]="anexosForaDoTexto()" (removido)="anexoRemovido.emit($event)" />
   </div>
 </article>
