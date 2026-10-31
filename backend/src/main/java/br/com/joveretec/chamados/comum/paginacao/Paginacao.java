@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.QueryParam;
 
+import java.util.Objects;
+
 /** Parâmetros de paginação recebidos via query string ({@code ?pagina=0&tamanho=20}). */
 public class Paginacao {
 
@@ -37,5 +39,16 @@ public class Paginacao {
 
     public int tamanho() {
         return tamanho;
+    }
+
+    /** Igualdade por valor: a paginação faz parte da chave dos caches de listagem. */
+    @Override
+    public boolean equals(Object outro) {
+        return outro instanceof Paginacao p && p.pagina == pagina && p.tamanho == tamanho;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(pagina, tamanho);
     }
 }

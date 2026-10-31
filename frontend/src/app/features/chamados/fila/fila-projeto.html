@@ -89,7 +89,9 @@
         </div>
       </li>
     } @empty {
-      @if (!carregamento.carregando()) {
+      @if (carregamento.carregando()) {
+        <li><app-esqueleto [quantidade]="5" rotulo="Carregando a fila…" /></li>
+      } @else {
         <li class="vazio">
           {{ filtrada() ? 'Nenhum chamado da fila com esses filtros.' : 'Nenhum chamado aberto ou em andamento neste projeto.' }}
         </li>

@@ -8,6 +8,7 @@ import { ChamadoResumo } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { carregarComParametros } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { Esqueleto } from '../../../shared/componentes/esqueleto';
 import { Paginacao } from '../../../shared/componentes/paginacao';
 import { Responsaveis } from '../../../shared/componentes/responsaveis';
 import { TempoRelativoPipe } from '../../../shared/formatos';
@@ -16,7 +17,17 @@ import { ParametrosLista, paginaDa, paraFiltro } from './filtro-url';
 
 @Component({
   selector: 'app-lista-chamados',
-  imports: [RouterLink, DatePipe, BadgeUrgencia, BadgeStatus, Paginacao, Responsaveis, TempoRelativoPipe, FiltrosChamados],
+  imports: [
+    RouterLink,
+    DatePipe,
+    BadgeUrgencia,
+    BadgeStatus,
+    Esqueleto,
+    Paginacao,
+    Responsaveis,
+    TempoRelativoPipe,
+    FiltrosChamados,
+  ],
   templateUrl: './lista-chamados.html',
   styleUrl: './lista-chamados.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -47,8 +58,10 @@ export class ListaChamados {
 
   protected readonly temFiltros = computed(() => temFiltrosAtivos(this.parametros()));
 
-  protected readonly lista = carregarComParametros(this.parametros, (p) =>
-    this.chamados.listar(paraFiltro(p), { pagina: paginaDa(p), tamanho: this.tamanhoPagina }),
+  protected readonly lista = carregarComParametros(
+    this.parametros,
+    (p) => this.chamados.listar(paraFiltro(p), { pagina: paginaDa(p), tamanho: this.tamanhoPagina }),
+    { cache: 'chamados' },
   );
 
   protected filtrar(mudancas: MudancaDeFiltro): void {

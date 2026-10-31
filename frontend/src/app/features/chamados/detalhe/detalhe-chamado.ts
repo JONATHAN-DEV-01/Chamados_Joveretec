@@ -13,6 +13,7 @@ import { Chamado, STATUS, StatusChamado, URGENCIAS, Urgencia } from '../../../co
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { Esqueleto } from '../../../shared/componentes/esqueleto';
 import { ErroCampo } from '../../../shared/formularios/erro-campo';
 import { aplicarErrosDoServidor } from '../../../shared/formularios/erros-servidor';
 import { DuracaoPipe, TempoCorridoPipe } from '../../../shared/formatos';
@@ -25,6 +26,7 @@ import { FeedChamado } from './feed/feed-chamado';
   selector: 'app-detalhe-chamado',
   imports: [
     ReactiveFormsModule,
+    Esqueleto,
     RouterLink,
     DatePipe,
     ErroCampo,

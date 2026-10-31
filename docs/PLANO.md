@@ -90,7 +90,6 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 | urgencia_peso | smallint | **coluna gerada** (`CRITICA`=4 … `BAIXA`=1), usada na ordenação e indexável |
 | status | varchar(15) | `ABERTO` \| `EM_ANDAMENTO` \| `CONCLUIDO`, default `ABERTO` |
 | posicao | integer | ≥ 1, posição na fila do projeto (1..n entre os **ativos**); `null` quando `CONCLUIDO` (V5, com `CHECK`) |
-| responsavel_id | bigint FK → usuario | **obsoleta desde a V4** (substituída por `chamado_responsavel`); será removida numa migration futura |
 | criado_por_id | bigint FK → usuario | not null |
 | versao | bigint | lock otimista (evita sobrescrever edição concorrente → 409) |
 | criado_em / atualizado_em | timestamptz | |
@@ -103,7 +102,7 @@ Convenções: tabelas e colunas em `snake_case`, PK `BIGINT GENERATED ALWAYS AS 
 - FKs indexadas
 
 ### `chamado_responsavel` (V4)
-Vários responsáveis por chamado; nenhum registro = "sem responsável". A V4 copiou o `responsavel_id` de cada chamado para cá.
+Vários responsáveis por chamado; nenhum registro = "sem responsável". A V4 copiou o antigo `chamado.responsavel_id` de cada chamado para cá; a coluna foi removida na V9.
 
 | Coluna | Tipo | Regras |
 |---|---|---|
@@ -347,6 +346,8 @@ ConfiguracaoDTO = { paleta: { fundo, superficie, destaque, texto },
 - **Segurança:** `@RolesAllowed` em todos os recursos; `@PermitAll` só em login, configurações (GET) e health. Senhas com BCrypt (custo 12). Chaves RSA do JWT via variável de ambiente (em dev/test o Quarkus gera um par temporário).
 - **CORS:** `quarkus.http.cors.origins=${CORS_ORIGINS}`.
 - **Validação:** Bean Validation nos DTOs de entrada, mensagens em português.
+- **Cache:** `GET /api/configuracoes` (até alterar), `GET /api/projetos` e `GET /api/usuarios` (cache `projetos-lista` / `usuarios-lista`, 60 s, limpo depois de cada alteração pela API, já com a transação confirmada). No navegador, as listas de seleção e as telas Dashboard, Chamados e Fila guardam o último resultado na memória da aba (por usuário) e o mostram na hora ao voltar, atualizando em segundo plano.
+- **Pool de conexões:** 2 conexões sempre abertas (`initial-size`/`min-size`) e no máximo 10, para não refazer TCP + TLS + autenticação até o pooler do Supabase depois de alguns minutos parado.
 - **Fault tolerance:** `@Timeout(2s)` + `@CircuitBreaker` + `@Fallback` (paleta padrão) na leitura de configurações (endpoint público, chamado em toda carga do frontend); `@Timeout(5s)` nas consultas do dashboard. Timeout/circuito aberto sem fallback → 503 `INDISPONIVEL`. Sem `@Retry` em escritas (não são idempotentes).
 - **Cache:** `@CacheResult` em `LeitorDeConfiguracoes.carregar()` (bean separado, para o fallback nunca ser cacheado); a alteração invalida o cache **depois** do commit.
 - **Autenticação sob demanda** (`quarkus.http.auth.proactive=false`): permite que token inválido/ausente responda 401 no formato padrão.
@@ -376,6 +377,7 @@ PostgreSQL real via Dev Services (Testcontainers, imagem `postgres:18`). Cada te
 
 | Classe | Cobertura |
 |---|---|
+| `CacheDeListagensTest` (2) | listagens de projetos e usuários (com cache) refletem na hora criar, renomear, arquivar/desarquivar e desativar/reativar |
 | `PaletaPessoalTest` (6) | sem paleta → `null`, salva em maiúsculas e volta no `/me` e no login, não afeta outros usuários nem a global, restaurar volta à global, cor inválida ou faltando 400, listagem de usuários não expõe a paleta |
 | `AuthResourceTest` (10) | login, e-mail sem diferenciar maiúsculas, senha errada/e-mail inexistente (mesma mensagem), validação, usuário inativo, sem token/token inválido → 401, `/me`, troca de senha |
 | `PermissoesTest` (6) | dev recebe 403 em usuários/projetos/configurações; dev consulta tudo; admin gerencia; usuário desativado com token válido → 403 |

@@ -121,5 +121,5 @@
     </section>
   </div>
 } @else if (carregamento.carregando()) {
-  <p class="vazio">Carregando indicadores…</p>
+  <app-esqueleto tipo="cartoes" [quantidade]="5" rotulo="Carregando indicadores…" />
 }

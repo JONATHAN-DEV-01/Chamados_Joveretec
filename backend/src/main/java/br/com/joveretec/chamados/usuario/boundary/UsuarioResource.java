@@ -9,6 +9,9 @@ import br.com.joveretec.chamados.usuario.boundary.UsuarioDTOs.CriarUsuarioReques
 import br.com.joveretec.chamados.usuario.control.UsuarioService;
 import br.com.joveretec.chamados.usuario.entity.FiltroUsuarios;
 import br.com.joveretec.chamados.usuario.entity.Perfil;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CacheResult;
 import br.com.joveretec.chamados.usuario.entity.Usuario;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
@@ -28,17 +31,23 @@ import jakarta.ws.rs.core.Context;
 @RolesAllowed({Perfil.ROLE_ADMIN, Perfil.ROLE_DESENVOLVEDOR})
 public class UsuarioResource {
 
+    static final String CACHE = "usuarios-lista";
+
     private static final String CORPO_OBRIGATORIO = "O corpo da requisição é obrigatório.";
 
     private final UsuarioService usuarios;
     private final UsuarioLogado usuarioLogado;
+    private final Cache cache;
 
-    public UsuarioResource(UsuarioService usuarios, UsuarioLogado usuarioLogado) {
+    public UsuarioResource(UsuarioService usuarios, UsuarioLogado usuarioLogado, @CacheName(CACHE) Cache cache) {
         this.usuarios = usuarios;
         this.usuarioLogado = usuarioLogado;
+        this.cache = cache;
     }
 
+    /** Lida em quase toda tela (escolha de responsáveis): cache curto, limpo a cada alteração. */
     @GET
+    @CacheResult(cacheName = CACHE)
     public Pagina<UsuarioDTO> listar(@QueryParam("busca") String busca,
                                      @QueryParam("ativo") Boolean ativo,
                                      @QueryParam("perfil") String perfil,
@@ -58,6 +67,7 @@ public class UsuarioResource {
     public Response criar(@Valid @NotNull(message = CORPO_OBRIGATORIO) CriarUsuarioRequest requisicao,
                           @Context UriInfo uriInfo) {
         Usuario criado = usuarios.criar(requisicao.nome(), requisicao.email(), requisicao.senha(), requisicao.perfil());
+        limparCache();
         return Response.created(uriInfo.getAbsolutePathBuilder().path(String.valueOf(criado.getId())).build())
                 .entity(UsuarioDTO.de(criado))
                 .build();
@@ -68,21 +78,31 @@ public class UsuarioResource {
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public UsuarioDTO atualizar(@PathParam("id") Long id,
                                 @Valid @NotNull(message = CORPO_OBRIGATORIO) AtualizarUsuarioRequest requisicao) {
-        return UsuarioDTO.de(usuarios.atualizar(id, requisicao.nome(), requisicao.email(), requisicao.perfil(),
-                requisicao.novaSenha()));
+        return limparCache(UsuarioDTO.de(usuarios.atualizar(id, requisicao.nome(), requisicao.email(),
+                requisicao.perfil(), requisicao.novaSenha())));
     }
 
     @POST
     @Path("/{id}/desativar")
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public UsuarioDTO desativar(@PathParam("id") Long id) {
-        return UsuarioDTO.de(usuarios.desativar(id, usuarioLogado.id()));
+        return limparCache(UsuarioDTO.de(usuarios.desativar(id, usuarioLogado.id())));
     }
 
     @POST
     @Path("/{id}/reativar")
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public UsuarioDTO reativar(@PathParam("id") Long id) {
-        return UsuarioDTO.de(usuarios.reativar(id));
+        return limparCache(UsuarioDTO.de(usuarios.reativar(id)));
+    }
+
+    /** Depois do commit (a transação é do serviço), para nenhuma leitura recachear o valor antigo. */
+    private <T> T limparCache(T resultado) {
+        limparCache();
+        return resultado;
+    }
+
+    private void limparCache() {
+        cache.invalidateAll().await().indefinitely();
     }
 }

@@ -91,6 +91,7 @@ export class ConteudoComAnexos {
         const imagem = document.createElement('img');
         imagem.alt = anexo.nome;
         imagem.loading = 'lazy';
+        imagem.decoding = 'async';
         link.append(imagem);
         imagens.set(anexo.id, imagem);
       } else {

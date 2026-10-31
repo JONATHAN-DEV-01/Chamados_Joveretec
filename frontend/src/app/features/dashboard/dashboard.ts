@@ -5,6 +5,7 @@ import { ProjetoService } from '../../core/api/projeto.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { STATUS, StatusChamado, URGENCIAS } from '../../core/models/chamado';
 import { carregarComParametros, listaDeApoio } from '../../shared/carregamento';
+import { Esqueleto } from '../../shared/componentes/esqueleto';
 import { ROTULO_STATUS, ROTULO_URGENCIA } from '../../shared/rotulos';
 import { Barra, Barras } from './barras';
 import { COR_STATUS, COR_URGENCIA } from './cores-serie';
@@ -18,7 +19,7 @@ interface Segmento {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, Barras, TemposPorChamado, UltimasAtualizacoes],
+  imports: [RouterLink, Barras, Esqueleto, TemposPorChamado, UltimasAtualizacoes],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -38,7 +39,9 @@ export class Dashboard {
   protected readonly COR_STATUS = COR_STATUS;
 
   private readonly idProjeto = computed(() => Number(this.projetoId()) || null);
-  protected readonly carregamento = carregarComParametros(this.idProjeto, (id) => this.dashboard.indicadores(id));
+  protected readonly carregamento = carregarComParametros(this.idProjeto, (id) => this.dashboard.indicadores(id), {
+    cache: 'dashboard',
+  });
 
   /** Filtros base para os links que abrem a lista de chamados. */
   private readonly filtroBase = computed(() => {

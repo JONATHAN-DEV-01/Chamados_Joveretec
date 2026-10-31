@@ -200,7 +200,7 @@ Os anexos ficam no Supabase Storage, em buckets **privados**. O navegador envia 
 
 ## 11. Problemas conhecidos e decisões que merecem revisão
 
-- **Testes:** todos passando. Backend: **149** (`./mvnw test`). Frontend: **135** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
+- **Testes:** todos passando. Backend: **151** (`./mvnw test`). Frontend: **141** (`npm run test:ci`). Build de produção do frontend e imagem Docker do backend OK. **Nenhum teste falhando.**
 - **Parte 3, verificação ponta a ponta (manual, local, armazenamento `local`):** criação de chamado com anexo (envio logo após a criação), feed com abertura, eventos e acompanhamentos, Markdown seguro (HTML escapado), anexo em acompanhamento com publicação só depois do envio, prévia de imagem, download, Solução concluindo o chamado, tempo total, última atividade na lista e "Últimas atualizações" no dashboard. Um problema encontrado e corrigido: o resumo do dashboard mostrava a marcação do Markdown. Na época, o upload TUS contra um Supabase real não pôde ser testado. **Ele já foi validado em produção** (passo 9.5). O contrato com a API REST do Storage também tem testes contra um servidor falso.
 - **Anexos de acompanhamento usam rascunho:** o primeiro arquivo escolhido cria um rascunho no backend, porque o caminho no bucket precisa do id. Se o usuário sair sem publicar, o rascunho e os arquivos são removidos pela limpeza de 24h. Até lá eles ocupam espaço no Storage. O mesmo vale para arquivos colados na descrição de um **novo chamado** que acabou não sendo criado (ficam em `rascunhos/usuarios/{id}/`).
 - **Armazenamento `local`** é só para desenvolvimento: no Render o disco é efêmero e os arquivos somem a cada deploy. Em produção use sempre `supabase`, que já é o padrão.
@@ -234,3 +234,34 @@ O Render gratuito "dorme" depois de ~15 min sem requisições, e a primeira requ
 Alternativa equivalente: <https://cron-job.org> → *Create cronjob* → URL acima → *Every 10 minutes* → *Save*.
 
 > **Horas grátis do Render:** uma instância Free acordada o mês inteiro consome cerca de 730 h das **750 h/mês** gratuitas da conta. Cabe, mas não sobra para um segundo serviço gratuito sempre ligado.
+
+## 13. Desempenho: diagnóstico e decisões de infraestrutura
+
+Medido em produção em 30/10/2026 (a partir do Brasil; o Cloudflare do Render atende pelo nó de São Paulo, `GRU`).
+
+| Medição | Resultado | Leitura |
+|---|---|---|
+| Primeira requisição com o backend dormindo | **73,7 s** | O Render Free hiberna após ~15 min sem tráfego. É de longe o maior problema. |
+| `/q/health/live` (sem banco), acordado | ~0,25 s | Ida e volta Brasil → Render. |
+| `/q/health/ready` (1 consulta ao banco) | ~0,32 s | Cada ida ao banco custa **~65 ms**: Render e Supabase não estão na mesma região. |
+| Compressão | gzip/br já aplicados | Cloudflare (Render) e Vercel já comprimem; nada a fazer no código. |
+| Bundle inicial do frontend | 88 KB transferidos | Todas as rotas são lazy; o maior pedaço lazy é o detalhe do chamado (24 KB). |
+| Consultas N+1 | nenhuma | Lista e fila carregam os responsáveis em lote (`@BatchSize`); o feed faz no máximo 5 consultas por página. |
+
+**Feito no código (item 5):** pool com 2 conexões sempre abertas; cache curto de projetos e usuários no backend; cache em memória com atualização em segundo plano no frontend (listas de seleção, Dashboard, Chamados e Fila); esqueletos de carregamento; miniaturas com `loading="lazy"` e `decoding="async"`; remoção da coluna obsoleta `responsavel_id` e do índice dela (V9).
+
+**Avaliado e não feito:**
+- **Endpoint único para o Dashboard.** Hoje o navegador faz 6 chamadas **em paralelo**. Juntá-las faria o backend executar as ~10 consultas **em sequência**, e com ~65 ms por consulta a tela ficaria mais lenta (~650 ms contra ~200 ms). Vale a pena só depois de aproximar as regiões (abaixo).
+- **Build nativo (GraalVM).** A compilação precisa de vários GB de memória e é lenta. A JVM sobe em poucos segundos; quase todo o tempo da subida a frio é o Render ligando o contêiner, que o build nativo não resolve.
+- **Novos índices.** As colunas usadas em filtros e ordenação já têm índice (projeto/posição, status, urgência, responsáveis, datas do histórico e dos acompanhamentos). Com o volume atual (dezenas de chamados), índices extras não mudam nada. A busca por texto com `pg_trgm` continua na seção 10.
+
+**Decisões suas (configuração ou plano):**
+
+| # | Onde | O que fazer | Ganho esperado | Custo |
+|---|---|---|---|---|
+| 1 | UptimeRobot ou cron-job.org | Monitor HTTP a cada 5–10 min em `/q/health` (seção 12) | Elimina a espera de ~75 s na maior parte do tempo | Grátis |
+| 2 | Render | **Confirmar a região** em *Settings → Region*. Se for Oregon (o padrão), criar um serviço novo em **Virginia (US East)**, ao lado do Supabase `us-east-1`, e depois atualizar `API_URL` na Vercel, o ping e a URL nos docs. A região não muda num serviço existente. | Cada consulta cai de ~65 ms para ~1–2 ms: telas com 3–4 consultas ficam 150–250 ms mais rápidas. Virginia também fica mais perto do Brasil que Oregon. | Grátis (é outro serviço Free); exige recadastrar as variáveis |
+| 3 | Render | Plano pago (Starter) | Sem hibernação e com mais CPU | ~US$ 7/mês |
+| 4 | Supabase | Plano Pro: miniaturas geradas pelo servidor (*Image Transformations*) e arquivos maiores que 50 MB | Imagens do feed mais leves | ~US$ 25/mês |
+| 5 | Vercel | Nada a mudar: o frontend já sai comprimido e com cache dos arquivos versionados | — | — |
+

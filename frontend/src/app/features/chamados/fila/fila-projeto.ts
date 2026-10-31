@@ -8,13 +8,14 @@ import { ChamadoResumo, STATUS_DA_FILA } from '../../../core/models/chamado';
 import { NotificacaoService } from '../../../core/notificacao/notificacao.service';
 import { carregarComParametros, listaDeApoio } from '../../../shared/carregamento';
 import { BadgeStatus, BadgeUrgencia } from '../../../shared/componentes/badges';
+import { Esqueleto } from '../../../shared/componentes/esqueleto';
 import { Responsaveis } from '../../../shared/componentes/responsaveis';
 import { FiltrosChamados, MudancaDeFiltro, temFiltrosAtivos } from '../filtros/filtros-chamados';
 import { ParametrosLista, lerLista, paraFiltro } from '../lista/filtro-url';
 
 @Component({
   selector: 'app-fila-projeto',
-  imports: [RouterLink, CdkDropList, CdkDrag, CdkDragHandle, BadgeUrgencia, BadgeStatus, Responsaveis, FiltrosChamados],
+  imports: [RouterLink, CdkDropList, CdkDrag, CdkDragHandle, BadgeUrgencia, BadgeStatus, Esqueleto, Responsaveis, FiltrosChamados],
   templateUrl: './fila-projeto.html',
   styleUrl: './fila-projeto.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -45,18 +46,22 @@ export class FilaProjeto {
   /** Com filtro, a lista é parcial: reordenar nela embaralharia a fila de verdade. */
   protected readonly filtrada = computed(() => temFiltrosAtivos(this.parametros(), false));
 
-  protected readonly carregamento = carregarComParametros(this.parametros, (p) => {
-    const projetoId = Number(p.projetoId) || null;
-    if (!projetoId) {
-      return of(null);
-    }
-    // A fila só tem chamados ativos; sem chip de status marcado, valem os dois.
-    const status = lerLista(p.status, STATUS_DA_FILA);
-    return this.chamados.listar(
-      { ...paraFiltro(p), projetoId, status: status.length ? status : [...STATUS_DA_FILA], ordem: 'POSICAO' },
-      { tamanho: TAMANHO_MAXIMO },
-    );
-  });
+  protected readonly carregamento = carregarComParametros(
+    this.parametros,
+    (p) => {
+      const projetoId = Number(p.projetoId) || null;
+      if (!projetoId) {
+        return of(null);
+      }
+      // A fila só tem chamados ativos; sem chip de status marcado, valem os dois.
+      const status = lerLista(p.status, STATUS_DA_FILA);
+      return this.chamados.listar(
+        { ...paraFiltro(p), projetoId, status: status.length ? status : [...STATUS_DA_FILA], ordem: 'POSICAO' },
+        { tamanho: TAMANHO_MAXIMO },
+      );
+    },
+    { cache: 'fila' },
+  );
   /** Cópia local para refletir o movimento na hora (atualização otimista). */
   protected readonly itens = linkedSignal(() => this.carregamento.dados()?.itens ?? []);
   protected readonly incompleta = computed(() => {

@@ -7,6 +7,9 @@ import br.com.joveretec.chamados.projeto.boundary.ProjetoDTOs.SalvarProjetoReque
 import br.com.joveretec.chamados.projeto.control.ProjetoService;
 import br.com.joveretec.chamados.projeto.entity.Projeto;
 import br.com.joveretec.chamados.usuario.entity.Perfil;
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheName;
+import io.quarkus.cache.CacheResult;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -26,15 +29,21 @@ import jakarta.ws.rs.core.UriInfo;
 @RolesAllowed({Perfil.ROLE_ADMIN, Perfil.ROLE_DESENVOLVEDOR})
 public class ProjetoResource {
 
+    static final String CACHE = "projetos-lista";
+
     private static final String CORPO_OBRIGATORIO = "O corpo da requisição é obrigatório.";
 
     private final ProjetoService projetos;
+    private final Cache cache;
 
-    public ProjetoResource(ProjetoService projetos) {
+    public ProjetoResource(ProjetoService projetos, @CacheName(CACHE) Cache cache) {
         this.projetos = projetos;
+        this.cache = cache;
     }
 
+    /** Lida em quase toda tela (campos de seleção): cache curto, limpo a cada alteração. */
     @GET
+    @CacheResult(cacheName = CACHE)
     public Pagina<ProjetoDTO> listar(@QueryParam("busca") String busca,
                                      @QueryParam("incluirArquivados") @DefaultValue("false") boolean incluirArquivados,
                                      @Valid @BeanParam Paginacao paginacao) {
@@ -52,6 +61,7 @@ public class ProjetoResource {
     public Response criar(@Valid @NotNull(message = CORPO_OBRIGATORIO) SalvarProjetoRequest requisicao,
                           @Context UriInfo uriInfo) {
         Projeto criado = projetos.criar(requisicao.nome(), requisicao.descricao());
+        limparCache();
         return Response.created(uriInfo.getAbsolutePathBuilder().path(String.valueOf(criado.getId())).build())
                 .entity(ProjetoDTO.de(criado))
                 .build();
@@ -62,20 +72,30 @@ public class ProjetoResource {
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public ProjetoDTO atualizar(@PathParam("id") Long id,
                                 @Valid @NotNull(message = CORPO_OBRIGATORIO) SalvarProjetoRequest requisicao) {
-        return ProjetoDTO.de(projetos.atualizar(id, requisicao.nome(), requisicao.descricao()));
+        return limparCache(ProjetoDTO.de(projetos.atualizar(id, requisicao.nome(), requisicao.descricao())));
     }
 
     @POST
     @Path("/{id}/arquivar")
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public ProjetoDTO arquivar(@PathParam("id") Long id) {
-        return ProjetoDTO.de(projetos.arquivar(id));
+        return limparCache(ProjetoDTO.de(projetos.arquivar(id)));
     }
 
     @POST
     @Path("/{id}/desarquivar")
     @RolesAllowed(Perfil.ROLE_ADMIN)
     public ProjetoDTO desarquivar(@PathParam("id") Long id) {
-        return ProjetoDTO.de(projetos.desarquivar(id));
+        return limparCache(ProjetoDTO.de(projetos.desarquivar(id)));
+    }
+
+    /** Depois do commit (a transação é do serviço), para nenhuma leitura recachear o valor antigo. */
+    private <T> T limparCache(T resultado) {
+        limparCache();
+        return resultado;
+    }
+
+    private void limparCache() {
+        cache.invalidateAll().await().indefinitely();
     }
 }

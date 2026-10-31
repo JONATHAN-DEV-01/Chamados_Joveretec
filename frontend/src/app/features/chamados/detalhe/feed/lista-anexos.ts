@@ -16,7 +16,7 @@ import { TamanhoPipe, ehImagem, iconeDoArquivo } from '../../../../shared/format
           <li class="anexo">
             @if (previas()[anexo.id]; as url) {
               <button type="button" class="previa" (click)="baixar(anexo)" [attr.aria-label]="'Baixar ' + anexo.nome">
-                <img [src]="url" [alt]="anexo.nome" loading="lazy" />
+                <img [src]="url" [alt]="anexo.nome" loading="lazy" decoding="async" />
               </button>
             }
             <div class="linha">
